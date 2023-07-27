@@ -125,7 +125,7 @@ psql -U postgres -c "CREATE USER <username> WITH PASSWORD '<password>';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <username>;"
 ```
 
-## 4. Assumptions
+## 5. Assumptions
 1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.
 
 2. Both devices measure the patients' heartbeats every 10 seconds, and each test can last from minutes to days, depending on the patient's requirements.
