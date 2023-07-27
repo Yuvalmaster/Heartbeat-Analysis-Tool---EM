@@ -96,7 +96,7 @@ sample_len: 10
 
 2. Ensure you have Python installed (Python 3.7 or higher).
 
-3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv. For demonstration purposes I added several examples in the provided `data` directory.
+3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format `<DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv`. For demonstration purposes I added several examples in the provided `data` directory.
 
 4. Running the Project: Execute the `ran.bat` file to load the data, perform analysis, and store the results in the specified PostgreSQL database. The main.py will install the missing packages that are required for the project.
 
