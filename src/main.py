@@ -1,5 +1,5 @@
 # Required packages for the system
-REQUIRED_PACKAGES = ['numpy', 'pandas', 'matplotlib', 'tqdm', 'yaml','psycopg2']    
+REQUIRED_PACKAGES = ['numpy', 'pandas', 'matplotlib', 'tqdm', 'PyYAML','psycopg2']    
 from setup import Setup
 Setup.check_and_install_packages(REQUIRED_PACKAGES)
 
