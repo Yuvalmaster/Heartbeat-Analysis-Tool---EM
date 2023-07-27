@@ -1,4 +1,10 @@
 # Heartbeat Analysis Tool
+## Table of Contents
+- [Project Overview](#project-overview)
+- [Getting Started](#getting-started)
+- [How to connect to Grafana](#how-to-connect-to-Grafana)
+- [PostgreSQL Database Setup](#postgresql-database-setup)
+- [Assumptions](#assumptions)
 
 ## 1. Project Overview
 The project aims to analyze and process heartbeat data collected from various devices, such as HSet and HPhire, and store it in a PostgreSQL database for further analysis. The data consists of log files in CSV format, containing device information, timestamp, heartbeat rates, and other relevant data. The main goal is to perform a comprehensive analysis and provide insights into the heart rate patterns and trends over time for different devices. Currently, the project focuses on two analyses: 1. Graph of heart rate over time. 2. graph of total heartbeats over time.
@@ -96,7 +102,7 @@ sample_len: 10
 
 2. Ensure you have Python installed (Python 3.7 or higher).
 
-3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv. For demonstration purposes I added several examples in the provided `data` directory.
+3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format `<DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv`. For demonstration purposes I added several examples in the provided `data` directory.
 
 4. Running the Project: Execute the `ran.bat` file to load the data, perform analysis, and store the results in the specified PostgreSQL database. The main.py will install the missing packages that are required for the project.
 
@@ -112,7 +118,7 @@ sample_len: 10
 7. Upload the JSON file from the `Dashboard data` folder.
 8. Set a name for the dashboard, and connect to PostgreSQL.
 
-## 4. Instructions for Setting Up PostgreSQL Database:
+## 4. PostgreSQL Database Setup:
 1. To set up the PostgreSQL database for the Heartbeat Analysis Tool, follow these steps:
 2. Install PostgreSQL: If you haven't already installed PostgreSQL, you can download it from the official website: https://www.postgresql.org/download/
 3. Create a Database: Open a terminal or command prompt and use the following commands to create a new database for the project:
@@ -125,7 +131,7 @@ psql -U postgres -c "CREATE USER <username> WITH PASSWORD '<password>';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <username>;"
 ```
 
-## 4. Assumptions
+## 5. Assumptions
 1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.
 
 2. Both devices measure the patients' heartbeats every 10 seconds, and each test can last from minutes to days, depending on the patient's requirements.
