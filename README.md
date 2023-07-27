@@ -5,17 +5,17 @@ The project aims to analyze and process heartbeat data collected from various de
 
 ### Key Features:
 
-* Data Loading and Preprocessing: The data_loader.py module loads raw data from CSV files in the `data` directory and preprocesses it to extract device information, dates, and heart rate measurements.
+* **Data Loading and Preprocessing**: The data_loader.py module loads raw data from CSV files in the `data` directory and preprocesses it to extract device information, dates, and heart rate measurements.
 
-* Database Interaction: The database.py module handles interactions with the PostgreSQL database. It creates a new database if it doesn't exist, saves raw data, and stores processed analysis results.
+* **Database Interaction**: The database.py module handles interactions with the PostgreSQL database. It creates a new database if it doesn't exist, saves raw data, and stores processed analysis results.
 
-* Analysis and Data Processing: The analysis.py module performs data processing tasks, including filtering and aggregating data to calculate total heartbeats and heart rate over time. It handles irregular data and gaps in measurements.
+* **Analysis and Data Processing**: The analysis.py module performs data processing tasks, including filtering and aggregating data to calculate total heartbeats and heart rate over time. It handles irregular data and gaps in measurements.
 
-* Configuration Management: YAML configuration files (`db_config.yaml` and `analysis_config.yaml`) in the `config` directory allow users to specify database connection details and analysis parameters, adapting the project to different setups and requirements.
+* **Configuration Management**: YAML configuration files (`db_config.yaml` and `analysis_config.yaml`) in the `config` directory allow users to specify database connection details and analysis parameters, adapting the project to different setups and requirements.
 
-* Visualization: The project generates informative graphs and plots to provide insights into heart rate patterns and trends over time. The graphs are visualized using Grafana dashboard.
+* **Visualization**: The project generates plots of hearbeat rate over time and total heartbeats per hour. The graphs are visualized using Grafana dashboard.
 
-* Error Handling: The code is designed with robust error handling to catch and report any exceptions or inconsistencies in the data, ensuring smooth execution and data integrity.
+* **Error Handling**: The code is designed with robust error handling to catch and report any exceptions or inconsistencies in the data, ensuring smooth execution and data integrity.
 
 ### Project structure:
 ```md
@@ -38,6 +38,9 @@ project_root/
     |   |- setup.py
     |   |- main.py
     |
+    |- Dashboard data/
+    |   |-.json
+    |
     |- README.md
 ```
 ### Dependencies
@@ -47,16 +50,16 @@ numpy
 pandas
 matplotlib
 tqdm
-yaml
+PyYAML
 psycopg2
 ```
 ## 2. Getting Started
 To use the Heartbeat Analysis Tool, follow these steps:
 
 1. Create if missing or modify the db_config.yaml and analysis_config.yaml files from the `config` folder to configure the parameters required parameters for the project.
-* Database Configuration: Modify the db_config.yaml file in the config directory to specify the PostgreSQL database connection details (host, port, database name, username, and password).
+>> * Database Configuration: Modify the db_config.yaml file in the config directory to specify the PostgreSQL database connection details (host, port, database name, username, and password).
 
-* Analysis Configuration: Adjust the analysis_config.yaml file in the config directory to set parameters such as heart rate units, heartbeat thresholds, and sample lengths for resampling.
+>> * Analysis Configuration: Adjust the analysis_config.yaml file in the config directory to set parameters such as heart rate units, heartbeat thresholds, and sample lengths for resampling.
 
 db_config.yaml format:
 ```md
@@ -92,38 +95,22 @@ sample_len: 10
 
 2. Ensure you have Python installed (Python 3.7 or higher).
 
-3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv.
+3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv. For demonstration purposes I added several examples in the provided `data` directory.
 
 4. Running the Project: Execute the `ran.bat` file to load the data, perform analysis, and store the results in the specified PostgreSQL database. The main.py will install the missing packages that are required for the project.
 
-5. Visualization: The project generates informative graphs and plots as output, providing insights into heart rate patterns and trends over time for each device. 
+5. Visualization: Connect to Grafana Dashboard, and visualize the data.
 
 ## 3. How to connect to Grafana
-  Download the Setup from Grafana offical site.
-  Select a Grafana Version you want to install (most recent Grafana version is selected by default).
-  Select an Edition.
-  Click Windows.
-  Install with Windows installer
-  Click Download the installer.
-  Open and run the installer.
-  Log in for the first time
-  Open your web browser and go to http://localhost:3000/. 3000 is the default HTTP port that Grafana listens to if you haven’t configured a different port.
-  On the login page, type admin for the username and password.
-  Change your password.
-Open the side menu by clicking the Grafana icon in the top header.
-In the side menu under the Configuration icon you should find a link named Data Sources.
-Click the + Add data source button in the top header.
-Select PostgreSQL from the Type dropdown.
-5. Click on the postreSQL, it opens the configuration tab to insert the database details.
+1. Download grafana https://grafana.com/grafana/download/10.0.0?pg=oss-graf&plcmt=hero-btn-1&platform=windows
+2. select a Grafana Version you want to install (the most recent Grafana version is selected by default).
+3. Open your web browser and go to http://localhost:3000/. 3000 is the default HTTP port that Grafana listens to if you haven’t configured a different port.
+4. On the login page, type admin for the username and password. Change your password later.
+5. Open the side menu on the left and open dashboards.
+6. In the Dashboards click on New -> Import.
+7. Upload the JSON file from the `Dashboard data` folder.
+8. Set a name for the dashboard, and connect to PostgreSQL.
 
-6. Insert the following configuration
-```md
-Host : localhost:5432
-User: postgres
-Password : // database password that you enter during installation
-SSL Mode: disable
-```
-7. Click on ‘Save & Test’ button in the buttom then it show the prompt message like ‘Database Connection OK’ which means database is configured successfully with Grafana.
 
 ## 4. Assumptions
 1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.

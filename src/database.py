@@ -144,6 +144,53 @@ class Database:
             self.connection.rollback()
             print(f"Error saving heartbeat rate data to database: {error}")
 
+
+    def save_unique_vals(self, uniques: list, table_name: str, timestamp=False):
+        """
+        Save uniques to the database.
+
+        Parameters:
+            uniques: list of unique values to be saved in the table.
+            table_name: str: The name of the table to be created.
+
+        Returns:
+            None
+        """
+        try:
+            # Create the table with a single column named 'unique_column'
+            if timestamp:
+                create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} (unique_column TIMESTAMP)"
+                self.cursor.execute(create_table_query)
+                self.connection.commit()
+
+                df = pd.DataFrame({'unique_column': uniques})
+                df['unique_column'] = pd.to_datetime(df['unique_column'])
+                records_to_insert = [tuple(row) for row in df.itertuples(index=False)]
+                
+            else:
+                create_table_query = f"CREATE TABLE IF NOT EXISTS {table_name} (unique_column VARCHAR(255))"
+                self.cursor.execute(create_table_query)
+                self.connection.commit()
+
+                # Convert the list of unique values into a list of tuples
+                records_to_insert = [(str(value),) for value in uniques]
+
+
+            # Delete all existing data from the table
+            delete_query = f"DELETE FROM {table_name};"
+            self.cursor.execute(delete_query)
+            self.connection.commit()
+
+            # Insert data into the table
+            insert_query = f"INSERT INTO {table_name} (unique_column) VALUES (%s)"
+            self.cursor.executemany(insert_query, records_to_insert)
+            self.connection.commit()
+
+        except psycopg2.Error as error:
+            self.connection.rollback()
+            print(f"Error saving unique values to database: {error}")
+
+
     def find_all_devices(self) -> list:
         """
         Find all unique devices in the database by table name.
@@ -157,7 +204,8 @@ class Database:
             SELECT table_name
             FROM information_schema.tables
             WHERE table_schema = 'public'
-            AND table_name NOT LIKE '%analysis%';  -- Exclude table names containing 'analysis'
+            AND table_name NOT LIKE '%analysis%' -- Exclude table names containing 'analysis'
+            AND table_name NOT LIKE '%unique%';  -- Exclude table names containing 'unique'
             """
 
             self.cursor.execute(query)
@@ -226,13 +274,13 @@ class Database:
     
         
         
-    # --- check if table exists (NOT NESSECARY in this configuration - available for future revisions)         
+       
     def check_file_in_table(self, table_name: str, date: str) -> bool:
         # Execute the SQL query to check if the specific date exists in the table
         query = f"""
             SELECT EXISTS (
                 SELECT 1 FROM {table_name}
-                WHERE time::date = '{date}'
+                WHERE time_column::date = '{date}'
             );
         """
         self.cursor.execute(query)

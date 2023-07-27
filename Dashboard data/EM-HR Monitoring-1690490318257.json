@@ -1,0 +1,444 @@
+{
+  "__inputs": [
+    {
+      "name": "DS_POSTGRESQL",
+      "label": "PostgreSQL",
+      "description": "",
+      "type": "datasource",
+      "pluginId": "postgres",
+      "pluginName": "PostgreSQL"
+    }
+  ],
+  "__elements": {},
+  "__requires": [
+    {
+      "type": "panel",
+      "id": "barchart",
+      "name": "Bar chart",
+      "version": ""
+    },
+    {
+      "type": "grafana",
+      "id": "grafana",
+      "name": "Grafana",
+      "version": "10.0.3"
+    },
+    {
+      "type": "datasource",
+      "id": "postgres",
+      "name": "PostgreSQL",
+      "version": "1.0.0"
+    },
+    {
+      "type": "panel",
+      "id": "timeseries",
+      "name": "Time series",
+      "version": ""
+    }
+  ],
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 17,
+            "gradientMode": "opacity",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineInterpolation": "linear",
+            "lineStyle": {
+              "fill": "solid"
+            },
+            "lineWidth": 6,
+            "pointSize": 5,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "showPoints": "auto",
+            "spanNulls": false,
+            "stacking": {
+              "group": "A",
+              "mode": "none"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "id": 4,
+      "options": {
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "pluginVersion": "10.0.3",
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  time_column,\r\n  ($Unit)\r\n\r\nFROM ${Device}_${ID}_analysis_rate\r\nWHERE \r\n  recording_id IN ($Recording_id) AND\r\n  log_version IN ($Version) AND \r\n  DATE(time_column)::text IN ($Date);\r\n  \r\n ",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        }
+      ],
+      "title": "Heartbeat Rate Over Time",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "postgres",
+        "uid": "${DS_POSTGRESQL}"
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "custom": {
+            "axisCenteredZero": false,
+            "axisColorMode": "text",
+            "axisLabel": "Total Beats (per hour)",
+            "axisPlacement": "auto",
+            "fillOpacity": 100,
+            "gradientMode": "scheme",
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            },
+            "lineWidth": 1,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 80
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "id": 3,
+      "options": {
+        "barRadius": 0,
+        "barWidth": 0.5,
+        "colorByField": "is_hour_complete_label",
+        "fullHighlight": false,
+        "groupWidth": 0.7,
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "right",
+          "showLegend": true
+        },
+        "orientation": "auto",
+        "showValue": "always",
+        "stacking": "none",
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "xField": "datetime_column",
+        "xTickLabelRotation": 0,
+        "xTickLabelSpacing": -200
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "${DS_POSTGRESQL}"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  date_column::text || '  HOUR:' || hour_column::text AS datetime_column,\r\n  total_beats,\r\n  CASE\r\n    WHEN is_hour_complete = 'False' THEN 'Partially recorded'\r\n    WHEN is_hour_complete = 'True' THEN 'Fully recorded'\r\n  END AS is_hour_complete_label\r\nFROM ${Device}_${ID}_analysis_total\r\nWHERE \r\n  log_version IN ($Version) AND\r\n  recording_id IN ($Recording_id) AND\r\n  date_column IN ($Date);",
+          "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              },
+              {
+                "parameters": [
+                  {
+                    "name": "time_column",
+                    "type": "functionParameter"
+                  }
+                ],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50,
+            "whereJsonTree": {
+              "children1": [
+                {
+                  "id": "a9a89b9b-4567-489a-bcde-f18997eddd84",
+                  "properties": {
+                    "value": [],
+                    "valueSrc": []
+                  },
+                  "type": "rule"
+                }
+              ],
+              "id": "b8a8b98b-89ab-4cde-b012-31899787e2c0",
+              "type": "group"
+            }
+          },
+          "table": "hset_2345"
+        }
+      ],
+      "title": "Total Recorded Beats Per Hour",
+      "type": "barchart"
+    }
+  ],
+  "refresh": false,
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": [],
+  "templating": {
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT\n    SUBSTRING(table_name, 1, POSITION('_' IN table_name) - 1) AS device_type\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%unique%';",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Device",
+        "multi": false,
+        "name": "Device",
+        "options": [],
+        "query": "SELECT DISTINCT\n    SUBSTRING(table_name, 1, POSITION('_' IN table_name) - 1) AS device_type\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%unique%';",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT\n    SUBSTRING(table_name, POSITION('_' IN table_name) + 1) AS device_id\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'   -- Change 'public' to your schema name if it's different\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%\\_analysis\\_total%'\n    AND table_name NOT LIKE '%\\_analysis\\_rate%'\n    AND table_name NOT LIKE '%unique%';",
+        "hide": 0,
+        "includeAll": false,
+        "label": "ID",
+        "multi": false,
+        "name": "ID",
+        "options": [],
+        "query": "SELECT DISTINCT\n    SUBSTRING(table_name, POSITION('_' IN table_name) + 1) AS device_id\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'   -- Change 'public' to your schema name if it's different\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%\\_analysis\\_total%'\n    AND table_name NOT LIKE '%\\_analysis\\_rate%'\n    AND table_name NOT LIKE '%unique%';",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT TO_CHAR(unique_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM unique_dates\nORDER BY date_only DESC;",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Date",
+        "multi": true,
+        "name": "Date",
+        "options": [],
+        "query": "SELECT DISTINCT TO_CHAR(unique_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM unique_dates\nORDER BY date_only DESC;",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT unique_column\nFROM unique_versions",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Version",
+        "multi": true,
+        "name": "Version",
+        "options": [],
+        "query": "SELECT DISTINCT unique_column\nFROM unique_versions",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
+        "definition": "SELECT DISTINCT unique_column\nFROM unique_recordings_id\nORDER BY unique_column ASC;",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Recording_id",
+        "multi": true,
+        "name": "Recording_id",
+        "options": [],
+        "query": "SELECT DISTINCT unique_column\nFROM unique_recordings_id\nORDER BY unique_column ASC;",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {},
+        "definition": "SELECT DISTINCT unique_column\nFROM unique_units",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Unit",
+        "multi": false,
+        "name": "Unit",
+        "options": [],
+        "query": "SELECT DISTINCT unique_column\nFROM unique_units",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      }
+    ]
+  },
+  "time": {
+    "from": "2023-07-03T11:31:19.986Z",
+    "to": "2023-07-03T11:32:19.494Z"
+  },
+  "timepicker": {},
+  "timezone": "",
+  "title": "EM-HR Monitoring",
+  "uid": "f4d5c4c8-2989-4000-90d6-b23df5814918",
+  "version": 31,
+  "weekStart": ""
+}

@@ -2,6 +2,8 @@ import os
 import numpy as np
 import pandas as pd
 import yaml
+from datetime import date, time, datetime
+
 
 class Analysis:
     def __init__(self, db_connection, table_name: str, config_directory: str):
@@ -32,9 +34,9 @@ class Analysis:
             self.hr_param_dict = config['hr_param_dict']
         else:
             self.hr_param_dict = {
-                's': 1,
-                'm': 60,
-                'h': 3600,
+                's'  : 1,
+                'm'  : 60,
+                'h'  : 3600,
                 'SEC': 1,
                 'MIN': 60
             }  
@@ -100,7 +102,7 @@ class Analysis:
         df = df.assign(device_type=name[0].upper())
         df = df.assign(device_id=name[1])
 
-        df['time_diff[sec]'] = pd.to_datetime(df['time'], format='%H:%M:%S').diff().dt.total_seconds()
+        df['time_diff[sec]'] = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
 
         # Initiate variables
         count = 0
@@ -205,11 +207,9 @@ class Analysis:
         for test in total_tests:
             test_df = self.filtered_df[self.filtered_df['recording_id'] == test]
             # Group the data by date and hour
-            hourly_groups = test_df.groupby([test_df['time'].dt.date, test_df['time'].dt.hour])
+            hourly_groups = test_df.groupby([test_df['time_column'].dt.date, test_df['time_column'].dt.hour])
 
-            for (date_val, _), hour_group in hourly_groups:
-                hour = hour_group['time'].dt.hour.unique().item()
-
+            for (date_val, hour), hour_group in hourly_groups:
                 # The subsequent section deals with HSet devices and the total beats code (1.7.0.2).
                 # If code 1.7.0.2 is not the last code before ending the test, the script will finalize the total beats.
                 if 'total_beats_device' in hour_group.columns:
@@ -227,28 +227,28 @@ class Analysis:
                 else:
                     total_beats = hour_group['total_beats'].sum()
 
-                total_time = hour_group['time'].max() - hour_group['time'].min()
-                start_datetime = hour_group['time'].min()
-                end_datetime = hour_group['time'].max()
+                total_time = hour_group['time_column'].max() - hour_group['time_column'].min()
+                start_datetime = hour_group['time_column'].min()
+                end_datetime = hour_group['time_column'].max()
 
                 version = hour_group['log_version'].unique().item()
                 device = hour_group['device_type'].unique().item()
                 device_id = hour_group['device_id'].unique().item()
 
                 # flag that indicates if a complete hour was measured.
-                is_hour_complete = hour_group['time'].dt.minute.min() == 0 and hour_group['time'].dt.minute.max() == 59
+                is_hour_complete = hour_group['time_column'].dt.minute.min() == 0 and hour_group['time_column'].dt.minute.max() == 59
 
                 total_heart_beat_df.append({
-                    'date': date_val,
-                    'test_id': test,
-                    'hour': hour,
-                    'total_beats': total_beats,
-                    'total_time': total_time,
-                    'start_time': start_datetime,
-                    'end_time': end_datetime,
-                    'device_type': device,
-                    'device_id': device_id,
-                    'log_version': version,
+                    'date_column'     : date_val.strftime('%Y-%m-%d'),
+                    'recording_id'    : test,
+                    'hour_column'     : hour,
+                    'total_beats'     : total_beats,
+                    'total_time'      : total_time,
+                    'start_time'      : start_datetime,
+                    'end_time'        : end_datetime,
+                    'device_type'     : device,
+                    'device_id'       : device_id,
+                    'log_version'     : version,
                     'is_hour_complete': is_hour_complete
                 })
 
@@ -264,32 +264,32 @@ class Analysis:
         Returns:
             DataFrame: DataFrame with heartbeat rate over time for each recording.
         """
-        df = self.filtered_df[['time', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id']].fillna(0)
+        df = self.filtered_df[['time_column', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id']]
 
         start_code_indexes = df['log_code'].isin(self.start_code)
         # Add the first measured point to the starting time. 
-        df['beats_sec'] = df['beats_sec'].mask(start_code_indexes, df['beats_sec'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
-        df['beats_min'] = df['beats_min'].mask(start_code_indexes, df['beats_min'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
-        df['beats_hr'] = df['beats_hr'].mask(start_code_indexes, df['beats_hr'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
+        df.loc[start_code_indexes, 'beats_sec'] = df['beats_sec'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
+        df.loc[start_code_indexes, 'beats_min'] = df['beats_min'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
+        df.loc[start_code_indexes, 'beats_hr'] = df['beats_hr'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
         
         # Find gaps with over 20 seconds and add zero for all measurments after this point.
-        gap_mask = (df['time'].diff().dt.total_seconds() > 20) & (~df['log_code'].isin(self.start_code))
+        gap_mask = (df['time_column'].diff().dt.total_seconds() > 20) & (~df['log_code'].isin(self.start_code))
         gap_rows = []
 
         for idx in df.index[gap_mask]:
-            prev_time = df['time'].iloc[idx - 1]
+            prev_time = df['time_column'].iloc[idx - 1]
             new_time = prev_time + pd.Timedelta(seconds=20)
 
             new_row = {
-                'time': new_time,
-                'log_code': 'added_point',
-                'beats_sec': 0,
-                'beats_min': 0,
-                'beats_hr': 0,
+                'time_column' : new_time,
+                'log_code'    : 'added_point',
+                'beats_sec'   : 0,
+                'beats_min'   : 0,
+                'beats_hr'    : 0,
                 'recording_id': df['recording_id'][idx],
-                'log_version': df['log_version'][idx],
-                'device_type': df['device_type'][idx],
-                'device_id': df['device_id'][idx],
+                'log_version' : df['log_version'][idx],
+                'device_type' : df['device_type'][idx],
+                'device_id'   : df['device_id'][idx],
             }
 
             gap_rows.append(new_row)
@@ -297,7 +297,7 @@ class Analysis:
         gap_rows_df = pd.DataFrame(gap_rows)
         heartbeat_rate_df = pd.concat([df, gap_rows_df], ignore_index=True)
 
-        heartbeat_rate_df.sort_values(by='time', inplace=True)
+        heartbeat_rate_df.sort_values(by='time_column', inplace=True)
         heartbeat_rate_df = self.resample_df(heartbeat_rate_df, self.sample_len, (self.start_code, self.end_code))
 
         return heartbeat_rate_df
@@ -316,14 +316,14 @@ class Analysis:
         Returns:
             DataFrame: The resampled DataFrame.
         """
-        df['time_diff[sec]'] = df['time'].diff().dt.total_seconds()
+        df['time_diff[sec]'] = df['time_column'].diff().dt.total_seconds()
         df.reset_index(inplace=True, drop=True)
         gap_rows = []
         
         lookout_idx = df.index[(df['time_diff[sec]'] > sec) & (~df['log_code'].isin(codes[0])) & (~df['log_code'].isin(codes[1]))]
 
         for idx in lookout_idx:
-            prev_time = df['time'].iloc[idx - 1]
+            prev_time = df['time_column'].iloc[idx - 1]
             num_rows = int(df['time_diff[sec]'].iloc[idx] // sec) - 1
             time_interval = pd.Timedelta(seconds=sec)
 
@@ -332,15 +332,15 @@ class Analysis:
                 recording_id = df['recording_id'].iloc[idx]
 
                 new_row = {
-                    'time': new_time,
-                    'log_version': df['log_version'][idx],
-                    'log_code': 'added_point', 
-                    'beats_sec': df['beats_sec'][idx-1],
-                    'beats_min': df['beats_min'][idx-1],
-                    'beats_hr': df['beats_hr'][idx-1],
+                    'time_column' : new_time,
+                    'log_version' : df['log_version'][idx],
+                    'log_code'    : 'added_point', 
+                    'beats_sec'   : df['beats_sec'][idx-1],
+                    'beats_min'   : df['beats_min'][idx-1],
+                    'beats_hr'    : df['beats_hr'][idx-1],
                     'recording_id': recording_id,
-                    'device_type': df['device_type'][idx],
-                    'device_id': df['device_id'][idx],
+                    'device_type' : df['device_type'][idx],
+                    'device_id'   : df['device_id'][idx],
                 }
 
                 gap_rows.append(new_row)
@@ -348,7 +348,7 @@ class Analysis:
         gap_rows_df = pd.DataFrame(gap_rows)
         sampled_df = pd.concat([df, gap_rows_df], ignore_index=True)
 
-        sampled_df.sort_values(by='time', inplace=True)
+        sampled_df.sort_values(by='time_column', inplace=True)
         sampled_df.reset_index(inplace=True, drop=True)
         sampled_df.drop('time_diff[sec]', axis=1, inplace=True)
 

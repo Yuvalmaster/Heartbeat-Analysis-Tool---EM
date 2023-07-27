@@ -16,7 +16,7 @@ class LogParser:
             dict or None: A dictionary containing extracted information or None if the file format is incorrect or the device is unrecognized.
         """
         # Set data frame columns and devices
-        df_column_names = ['time', 'log_version', 'log_code', 'log_data1', 'log_data2', 'log_data3']
+        df_column_names = ['time_column', 'log_version', 'log_code', 'log_data1', 'log_data2', 'log_data3']
         devices = ['hset', 'hphire']
         
         # Get clean file name
@@ -38,11 +38,11 @@ class LogParser:
         # Read data frame
         df = pd.read_csv(file_path, header=None, names=df_column_names)
         
-        # Convert the 'time' column to datetime
-        df['time'] = pd.to_datetime(df['time'], format='%H:%M:%S', errors='coerce')
+        # Convert the 'time_column' column to datetime
+        df['time_column'] = pd.to_datetime(df['time_column'], format='%H:%M:%S', errors='coerce')
 
-        # Add the date to the 'time' column
-        df['time'] = pd.to_datetime(DATE + ' ' + df['time'].dt.strftime('%H:%M:%S'))
+        # Add the date to the 'time_column' column
+        df['time_column'] = pd.to_datetime(DATE + ' ' + df['time_column'].dt.strftime('%H:%M:%S'))
         
         data = {
             'DEVICE_TYPE' : DEVICE_TYPE,
