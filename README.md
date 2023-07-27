@@ -98,7 +98,7 @@ sample_len: 10
 
 5. Visualization: The project generates informative graphs and plots as output, providing insights into heart rate patterns and trends over time for each device. 
 
-## 5. How to connect to Grafana
+## 3. How to connect to Grafana
   Download the Setup from Grafana offical site.
   Select a Grafana Version you want to install (most recent Grafana version is selected by default).
   Select an Edition.
@@ -125,7 +125,7 @@ SSL Mode: disable
 ```
 7. Click on ‘Save & Test’ button in the buttom then it show the prompt message like ‘Database Connection OK’ which means database is configured successfully with Grafana.
 
-## 3. Assumptions
+## 4. Assumptions
 1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.
 
 2. Both devices measure the patients' heartbeats every 10 seconds, and each test can last from minutes to days, depending on the patient's requirements.
