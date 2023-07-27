@@ -1,0 +1,20 @@
+hr_param_dict:
+  s: 1
+  m: 60
+  h: 3600
+  SEC: 1
+  MIN: 60
+start_code:
+  - '1.7.0.0'
+  - '170'
+end_code:
+  - '1.7.1.0'
+  - '171'
+meas_code:
+  - '1.7.0.1'
+  - '200'
+total_beats_code: '1.7.0.2'
+cup:
+  - 5
+  - 6
+sample_len: 10
