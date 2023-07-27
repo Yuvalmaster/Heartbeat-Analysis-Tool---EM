@@ -167,8 +167,9 @@ class Analysis:
                 hr_list.append(np.nan)
                 total_beats_device.append(np.nan)
 
-        df['HR'] = hr_list
-        df['unit'] = '[beats/sec]'
+        df['beats_sec'] = hr_list
+        df = self.convert_units(df, 'm')
+        df = self.convert_units(df, 'h')
         df['total_beats_device'] = total_beats_device
         df['recording_id'] = recording_id
 
@@ -178,9 +179,9 @@ class Analysis:
         filtered_df.loc[(filtered_df['time_diff[sec]'] > 20) & (filtered_df['log_code'].isin(self.meas_code)), 'time_diff_[sec]'] = 20
 
         # Calculate total number of beats for each measurement
-        mask = filtered_df['time_diff[sec]'].notna() & filtered_df['HR'].notna()
+        mask = filtered_df['time_diff[sec]'].notna() & filtered_df['beats_sec'].notna()
         with pd.option_context('mode.chained_assignment', None):
-            filtered_df['total_beats'] = np.floor(filtered_df['time_diff[sec]'][mask] * filtered_df['HR'][mask])
+            filtered_df['total_beats'] = np.floor(filtered_df['time_diff[sec]'][mask] * filtered_df['beats_sec'][mask])
 
         # Iterate through each column in the DataFrame and remove irrelevant columns
         for col in filtered_df.columns:
@@ -263,12 +264,14 @@ class Analysis:
         Returns:
             DataFrame: DataFrame with heartbeat rate over time for each recording.
         """
-        df = self.filtered_df[['time', 'log_version', 'log_code', 'HR', 'unit', 'recording_id', 'device_type', 'device_id']].fillna(0)
+        df = self.filtered_df[['time', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id']].fillna(0)
 
         start_code_indexes = df['log_code'].isin(self.start_code)
         # Add the first measured point to the starting time. 
-        df['HR'] = df['HR'].mask(start_code_indexes, df['HR'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
-
+        df['beats_sec'] = df['beats_sec'].mask(start_code_indexes, df['beats_sec'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
+        df['beats_min'] = df['beats_min'].mask(start_code_indexes, df['beats_min'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
+        df['beats_hr'] = df['beats_hr'].mask(start_code_indexes, df['beats_hr'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code)))
+        
         # Find gaps with over 20 seconds and add zero for all measurments after this point.
         gap_mask = (df['time'].diff().dt.total_seconds() > 20) & (~df['log_code'].isin(self.start_code))
         gap_rows = []
@@ -280,12 +283,13 @@ class Analysis:
             new_row = {
                 'time': new_time,
                 'log_code': 'added_point',
-                'HR': 0,
+                'beats_sec': 0,
+                'beats_min': 0,
+                'beats_hr': 0,
                 'recording_id': df['recording_id'][idx],
                 'log_version': df['log_version'][idx],
                 'device_type': df['device_type'][idx],
                 'device_id': df['device_id'][idx],
-                'unit':df['unit'][idx]
             }
 
             gap_rows.append(new_row)
@@ -294,7 +298,7 @@ class Analysis:
         heartbeat_rate_df = pd.concat([df, gap_rows_df], ignore_index=True)
 
         heartbeat_rate_df.sort_values(by='time', inplace=True)
-        heartbeat_rate_df = self.resample_df(df, self.sample_len, (self.start_code, self.end_code))
+        heartbeat_rate_df = self.resample_df(heartbeat_rate_df, self.sample_len, (self.start_code, self.end_code))
 
         return heartbeat_rate_df
 
@@ -331,11 +335,12 @@ class Analysis:
                     'time': new_time,
                     'log_version': df['log_version'][idx],
                     'log_code': 'added_point', 
-                    'HR': df['HR'][idx-1],
+                    'beats_sec': df['beats_sec'][idx-1],
+                    'beats_min': df['beats_min'][idx-1],
+                    'beats_hr': df['beats_hr'][idx-1],
                     'recording_id': recording_id,
                     'device_type': df['device_type'][idx],
                     'device_id': df['device_id'][idx],
-                    'unit': df['unit'][idx-1]
                 }
 
                 gap_rows.append(new_row)
@@ -366,11 +371,9 @@ class Analysis:
             raise ValueError(f"Invalid time unit. Expected {valid_units}, but received '{unit}'.")
             
         if unit == 'm':
-            df['HR'] = df['HR'] * 60
-            df['unit'] = '[beats/min]'
+            df['beats_min'] = np.floor(df['beats_sec'] * 60)
         
         elif unit == 'h':
-            df['HR'] = df['HR'] * 3600
-            df['unit'] = '[beats/hr]'
+            df['beats_hr'] = np.floor(df['beats_sec'] * 3600)
             
         return df
