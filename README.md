@@ -69,6 +69,7 @@ database: HRDataEM
 user: <username>
 password: <password>
 ```
+
 analysis_config.yaml format (with default values):
 ```md
 hr_param_dict:
@@ -111,6 +112,18 @@ sample_len: 10
 7. Upload the JSON file from the `Dashboard data` folder.
 8. Set a name for the dashboard, and connect to PostgreSQL.
 
+## 4. Instructions for Setting Up PostgreSQL Database:
+1. To set up the PostgreSQL database for the Heartbeat Analysis Tool, follow these steps:
+2. Install PostgreSQL: If you haven't already installed PostgreSQL, you can download it from the official website: https://www.postgresql.org/download/
+3. Create a Database: Open a terminal or command prompt and use the following commands to create a new database for the project:
+
+```md
+Copy code
+# Replace <database_name>, <username>, and <password> with your desired values.
+psql -U postgres -c "CREATE DATABASE <database_name>;"
+psql -U postgres -c "CREATE USER <username> WITH PASSWORD '<password>';"
+psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <username>;"
+```
 
 ## 4. Assumptions
 1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.
