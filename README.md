@@ -1,10 +1,10 @@
 # Heartbeat Analysis Tool
 ## Table of Contents
-- [Project Overview](#project-overview)
-- [Getting Started](#getting-started)
-- [How to connect to Grafana](#how-to-connect-to-Grafana)
-- [PostgreSQL Database Setup](#postgresql-database-setup)
-- [Assumptions](#assumptions)
+- [Project Overview](#1-project-overview)
+- [Getting Started](#2-getting-started)
+- [How to connect to Grafana](#3-how-to-connect-to-grafana)
+- [PostgreSQL Database Setup](#4-postgresql-database-setup)
+- [Assumptions](#5-assumptions)
 
 ## 1. Project Overview
 The project aims to analyze and process heartbeat data collected from various devices, such as HSet and HPhire, and store it in a PostgreSQL database for further analysis. The data consists of log files in CSV format, containing device information, timestamp, heartbeat rates, and other relevant data. The main goal is to perform a comprehensive analysis and provide insights into the heart rate patterns and trends over time for different devices. Currently, the project focuses on two analyses: 1. Graph of heart rate over time. 2. graph of total heartbeats over time.
