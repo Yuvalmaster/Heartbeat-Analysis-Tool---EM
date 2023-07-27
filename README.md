@@ -1,6 +1,6 @@
 # Heartbeat Analysis Tool
 
-## Project Overview
+## 1. Project Overview
 The project aims to analyze and process heartbeat data collected from various devices, such as HSet and HPhire, and store it in a PostgreSQL database for further analysis. The data consists of log files in CSV format, containing device information, timestamp, heartbeat rates, and other relevant data. The main goal is to perform a comprehensive analysis and provide insights into the heart rate patterns and trends over time for different devices. Currently, the project focuses on two analyses: 1. Graph of heart rate over time. 2. graph of total heartbeats over time.
 
 ### Key Features:
@@ -50,7 +50,7 @@ tqdm
 yaml
 psycopg2
 ```
-## Getting Started
+## 2. Getting Started
 To use the Heartbeat Analysis Tool, follow these steps:
 
 1. Create if missing or modify the db_config.yaml and analysis_config.yaml files from the `config` folder to configure the parameters required parameters for the project.
@@ -94,11 +94,11 @@ sample_len: 10
 
 3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv.
 
-4. Running the Project: Execute the main.py script to load the data, perform analysis, and store the results in the specified PostgreSQL database. The main.py will install the missing packages that are required for the project
+4. Running the Project: Execute the `ran.bat` file to load the data, perform analysis, and store the results in the specified PostgreSQL database. The main.py will install the missing packages that are required for the project.
 
 5. Visualization: The project generates informative graphs and plots as output, providing insights into heart rate patterns and trends over time for each device. 
 
-## How to connect to Grafana
+## 5. How to connect to Grafana
   Download the Setup from Grafana offical site.
   Select a Grafana Version you want to install (most recent Grafana version is selected by default).
   Select an Edition.
@@ -125,7 +125,7 @@ SSL Mode: disable
 ```
 7. Click on ‘Save & Test’ button in the buttom then it show the prompt message like ‘Database Connection OK’ which means database is configured successfully with Grafana.
 
-## Assumptions
+## 3. Assumptions
 1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.
 
 2. Both devices measure the patients' heartbeats every 10 seconds, and each test can last from minutes to days, depending on the patient's requirements.
