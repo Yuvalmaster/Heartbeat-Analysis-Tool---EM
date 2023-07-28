@@ -102,7 +102,7 @@ sample_len: 10
 
 2. Ensure you have Python installed (Python 3.7 or higher).
 
-3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format `<DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv`. For demonstration purposes I added several examples in the provided `data` directory.
+3. Data Preparation: Place the raw data CSV files in the `data` directory. Ensure that the file names follow the format `<DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv`. For demonstration purposes, I added several examples in the provided `data` directory.
 
 4. Running the Project: Execute the `ran.bat` file to load the data, perform analysis, and store the results in the specified PostgreSQL database. The main.py will install the missing packages that are required for the project.
 
@@ -135,25 +135,26 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <userna
 ```
 
 ## 5. Assumptions
-1. Each CSV file contains measurements that occurred on a specific date. The files may include several tests on the same day and may overlap with tests from the day before or after.
+1. CSV files hold measurements for specific dates. The files may include several tests on the same day and may overlap with tests from the day before or after.
 
-2. Both devices measure the patients' heartbeats every 10 seconds, and each test can last from minutes to days, depending on the patient's requirements.
+2. Both devices record heartbeats every 10 seconds during varying test durations (from seconds to days).
 
-3. The script does not assume that the device will produce a log entry every 10 seconds, and it handles irregularities in the data.
+3. The script handles irregular data without assuming a fixed log entry interval.
 
-4. If two or more measurements were recorded at the same time, the script will choose the first value for simplicity. In future revisions, it may consider taking the average or median based on the data from the log.
+4. If multiple measurements occur simultaneously, the script selects the first value for simplicity. Future versions may require considering average or median options.
 
-5. If a measurement was more than 5 beats/sec for Hset or 6 beats/sec for HPhire, the heartbeat rate will be capped at the upper limit of each device, respectively.
+5. Heartbeat rates exceeding device-specific limits get capped to those limits.
 
-6. Since Hset has a code to measure the total beats for a device, the total beats/hr will be determined by this measurement. If there is a gap between regular measurements until the end of the measurements, the total beats from this point will be determined by rate * time.
+6. Total beats per hour rely on HSet's total beats measurement, or rate * time for Hphire devices or in case of gaps between regular measurements.
 
-7. If there is more than a 20-second gap between measurements, a new point will be created 20 seconds after the first, with the measurement equal to zero.
+7. For gaps exceeding 20 seconds between measurements, the script adds new points with zero beats.
 
-8. Log additional data 3 (optional) is currently empty and not used for analysis. The script drops the column if it is empty.
+8. Optional log data 3 is ignored for analysis if empty.
 
-9. Assuming each date has one CSV file, thus if there is a file for the same device with the same date, the script rejects it to prevent double data.
+9. Duplicate data from the same device on the same date is rejected to avoid repetition.
 
-10. The graph of the total heartbeat over time will calculate how many beats were measured during each hour of the day. If there is a partial recording, it will still show how many were recorded in that hour and indicate that it is partial.
+10. A user-provided db_config file ensures security and avoids password sharing.
 
-11. A db_config file is supplied by the user to prevent sharing passwords and enhance security.
+11. The graph of the total heartbeat over time will calculate how many beats were measured during each hour of the day. If there is a partial recording, it will still show how many were recorded in that hour and indicate that it is partial. If a recording lasted an hour (from hh:00 to hh:59), it will be labeled as 'Fully recorded,' otherwise, it will be labeled as 'Partially recorded'.
 
+12. The Heartbeat Rate Over Time graph is based on universal time (UTC).
