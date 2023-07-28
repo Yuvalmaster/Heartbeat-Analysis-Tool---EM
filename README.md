@@ -117,6 +117,8 @@ sample_len: 10
 6. In the Dashboards click on New -> Import.
 7. Upload the JSON file from the `Dashboard data` folder.
 8. Set a name for the dashboard, and connect to PostgreSQL.
+9. Interact with the dashboard using the filters on the top. You can select Device, ID, multiple Date, Version, Recording_id options, and units for the heartbeat rate graph.
+    
 ![Dashboard_img](https://github.com/Yuvalmaster/Heartbeat-Analysis-Tool---EM/assets/121662835/c9786a22-838e-429d-8bda-0fc263f30a1e)
 
 ## 4. PostgreSQL Database Setup:
