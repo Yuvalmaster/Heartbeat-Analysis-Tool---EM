@@ -54,7 +54,6 @@ The following Python packages are required for this project:
 ```md
 numpy
 pandas
-matplotlib
 tqdm
 PyYAML
 psycopg2
