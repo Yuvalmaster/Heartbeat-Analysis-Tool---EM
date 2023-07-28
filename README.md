@@ -4,7 +4,7 @@
 - [Getting Started](#2-getting-started)
 - [How to connect to Grafana](#3-how-to-connect-to-grafana)
 - [PostgreSQL Database Setup](#4-postgresql-database-setup)
-- [Assumptions & Clarifications](#5-assumptions-&-clarifications)
+- [Assumptions and Clarifications](#5-assumptions-and-clarifications)
 
 ## 1. Project Overview
 The project aims to analyze and process heartbeat data collected from various devices, such as HSet and HPhire, and store it in a PostgreSQL database for further analysis. The data consists of log files in CSV format, containing device information, timestamp, heartbeat rates, and other relevant data. The main goal is to perform a comprehensive analysis and provide insights into the heart rate patterns and trends over time for different devices. Currently, the project focuses on two analyses: 1. Graph of heart rate over time. 2. graph of total heartbeats over time.
@@ -134,7 +134,7 @@ psql -U postgres -c "CREATE USER <username> WITH PASSWORD '<password>';"
 psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <username>;"
 ```
 
-## 5. Assumptions & Clarifications
+## 5. Assumptions and Clarifications
 1. CSV files hold measurements for specific dates. The files may include several tests on the same day and may overlap with tests from the day before or after.
 
 2. Both devices record heartbeats every 10 seconds during varying test durations (from seconds to days).
