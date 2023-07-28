@@ -54,7 +54,6 @@ The following Python packages are required for this project:
 ```md
 numpy
 pandas
-matplotlib
 tqdm
 PyYAML
 psycopg2
@@ -127,7 +126,6 @@ sample_len: 10
 3. Create a Database: Open a terminal or command prompt and use the following commands to create a new database for the project:
 
 ```md
-Copy code
 # Replace <database_name>, <username>, and <password> with your desired values.
 psql -U postgres -c "CREATE DATABASE <database_name>;"
 psql -U postgres -c "CREATE USER <username> WITH PASSWORD '<password>';"
