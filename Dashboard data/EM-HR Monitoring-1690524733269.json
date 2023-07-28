@@ -64,6 +64,7 @@
         "type": "postgres",
         "uid": "${DS_POSTGRESQL}"
       },
+      "description": "The graph depicts the heartbeat rate over time, with 10 seconds between measurements. Since each recording can be taken at a different time, you can choose the date and the recording ID, and you will be given the option 'Zoom to data'. Please select your required Units from the top filter (beats/sec, beats/min, beats/hr). ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -72,6 +73,7 @@
           "custom": {
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -132,6 +134,9 @@
           "placement": "bottom",
           "showLegend": true
         },
+        "timezone": [
+          "utc"
+        ],
         "tooltip": {
           "mode": "single",
           "sort": "none"
@@ -176,6 +181,7 @@
         "type": "postgres",
         "uid": "${DS_POSTGRESQL}"
       },
+      "description": "The graph depicts the total number of beats recorded over the course of an hour. The X-axis displays the date and time of the recording. If a recording lasted an hour (from hh:00 to hh:59), it will be labeled as 'Fully recorded,' otherwise it will be labeled as 'Partially recorded'.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -307,7 +313,7 @@
       "type": "barchart"
     }
   ],
-  "refresh": false,
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -415,6 +421,10 @@
       },
       {
         "current": {},
+        "datasource": {
+          "type": "postgres",
+          "uid": "${DS_POSTGRESQL}"
+        },
         "definition": "SELECT DISTINCT unique_column\nFROM unique_units",
         "hide": 0,
         "includeAll": false,
@@ -432,13 +442,13 @@
     ]
   },
   "time": {
-    "from": "2023-07-03T11:31:19.986Z",
-    "to": "2023-07-03T11:32:19.494Z"
+    "from": "2023-07-02T23:59:20.000Z",
+    "to": "2023-07-03T00:00:40.000Z"
   },
   "timepicker": {},
   "timezone": "",
   "title": "EM-HR Monitoring",
   "uid": "f4d5c4c8-2989-4000-90d6-b23df5814918",
-  "version": 31,
+  "version": 38,
   "weekStart": ""
 }
