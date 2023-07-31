@@ -208,11 +208,14 @@ class Analysis:
         """
         total_tests = self.filtered_df['recording_id'].unique()
         total_heart_beat_df = []
-
+        
         for test in total_tests:
             test_df = self.filtered_df[self.filtered_df['recording_id'] == test]
+            
             # Group the data by date and hour
             hourly_groups = test_df.groupby([test_df['time_column'].dt.date, test_df['time_column'].dt.hour])
+
+            last_hour_device_total = 0
 
             for (date_val, hour), hour_group in hourly_groups:
                 # The subsequent section deals with HSet devices and the total beats code (1.7.0.2).
@@ -224,10 +227,12 @@ class Analysis:
                         total_beats = hour_group['total_beats'].sum()
                     
                     elif last_value_index != hour_group.index[-1] - 1:
-                        total_beats = hour_group['total_beats_device'].sum() + hour_group.loc[last_value_index:, 'total_beats'].sum()
+                        total_beats = (hour_group['total_beats_device'][last_value_index]-last_hour_device_total) + hour_group.loc[last_value_index:, 'total_beats'].sum()
+                        last_hour_device_total = hour_group['total_beats_device'][last_value_index]
                     
                     else:
-                        total_beats = hour_group['total_beats_device'].sum()
+                        total_beats = (hour_group['total_beats_device'][last_value_index]-last_hour_device_total)
+                        last_hour_device_total = hour_group['total_beats_device'][last_value_index]
                 
                 else:
                     total_beats = hour_group['total_beats'].sum()
@@ -373,7 +378,7 @@ class Analysis:
             DataFrame: The DataFrame with added points.
         """
 
-        gap_mask = (df['time_column'].diff().dt.total_seconds() > delta) & (~df['log_code'].isin(start_code))
+        gap_mask = (df['time_diff[sec]'] > delta) & (~df['log_code'].isin(start_code))
         gap_rows = []
 
         for idx in df.index[gap_mask]:
@@ -402,4 +407,10 @@ class Analysis:
         gap_rows_df = pd.DataFrame(gap_rows)
         new_df = pd.concat([df, gap_rows_df], ignore_index=True)
         new_df.sort_values(by='time_column', inplace=True)
+
+        # Recalculate time_diff
+        
+        time_diff = pd.to_datetime(new_df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
+        new_df['time_diff[sec]'][0:-1] = time_diff[1:]
+
         return new_df
