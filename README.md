@@ -1,4 +1,5 @@
 # Heartbeat Analysis Tool
+NOTE: Please view Issues tab for bugs found after submission and how to handle them.
 ## Table of Contents
 - [Project Overview](#1-project-overview)
 - [Getting Started](#2-getting-started)
