@@ -73,6 +73,11 @@ class Analysis:
         else:
             self.sample_len = 10
 
+        if 'time_delta' in config:
+            self.delta = float(config['time_delta'])
+        else:
+            self.delta = 20.0
+
         self.filtered_df = self.filter_data()
 
 
@@ -147,7 +152,7 @@ class Analysis:
                         # =============================================== #
                         # NOTE: lowest beats per second ever measured for
                         # a living person was 0.45 [beats/sec] (27
-                        # [beats/sec]). Therefore, for future revisions
+                        # [beats/min]). Therefore, for future revisions
                         # it might be relevant to consider a low threshold.
                         # =============================================== #
 
@@ -170,15 +175,15 @@ class Analysis:
                 total_beats_device.append(np.nan)
 
         df['beats_sec'] = hr_list
-        df = self.convert_units(df, 'm')
-        df = self.convert_units(df, 'h')
+        df = self.convert_units(df, 'm', valid_units=self.hr_param_dict)
+        df = self.convert_units(df, 'h', valid_units=self.hr_param_dict)
         df['total_beats_device'] = total_beats_device
         df['recording_id'] = recording_id
 
         filtered_df = df[~df['recording_id'].isin(['remove'])]
+        filtered_df.reset_index(inplace=True, drop=True)
 
-        # Address time diff greater than 20 seconds
-        filtered_df.loc[(filtered_df['time_diff[sec]'] > 20) & (filtered_df['log_code'].isin(self.meas_code)), 'time_diff_[sec]'] = 20
+        filtered_df = self.handle_data_gaps(df=filtered_df, start_code=self.start_code, delta=self.delta)
 
         # Calculate total number of beats for each measurement
         mask = filtered_df['time_diff[sec]'].notna() & filtered_df['beats_sec'].notna()
@@ -267,38 +272,13 @@ class Analysis:
         df = self.filtered_df[['time_column', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id']]
 
         start_code_indexes = df['log_code'].isin(self.start_code)
+
         # Add the first measured point to the starting time. 
-        df.loc[start_code_indexes, 'beats_sec'] = df['beats_sec'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
-        df.loc[start_code_indexes, 'beats_min'] = df['beats_min'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
-        df.loc[start_code_indexes, 'beats_hr'] = df['beats_hr'].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
-        
-        # Find gaps with over 20 seconds and add zero for all measurments after this point.
-        gap_mask = (df['time_column'].diff().dt.total_seconds() > 20) & (~df['log_code'].isin(self.start_code))
-        gap_rows = []
-
-        for idx in df.index[gap_mask]:
-            prev_time = df['time_column'].iloc[idx - 1]
-            new_time = prev_time + pd.Timedelta(seconds=20)
-
-            new_row = {
-                'time_column' : new_time,
-                'log_code'    : 'added_point',
-                'beats_sec'   : 0,
-                'beats_min'   : 0,
-                'beats_hr'    : 0,
-                'recording_id': df['recording_id'][idx],
-                'log_version' : df['log_version'][idx],
-                'device_type' : df['device_type'][idx],
-                'device_id'   : df['device_id'][idx],
-            }
-
-            gap_rows.append(new_row)
-
-        gap_rows_df = pd.DataFrame(gap_rows)
-        heartbeat_rate_df = pd.concat([df, gap_rows_df], ignore_index=True)
-
-        heartbeat_rate_df.sort_values(by='time_column', inplace=True)
-        heartbeat_rate_df = self.resample_df(heartbeat_rate_df, self.sample_len, (self.start_code, self.end_code))
+        units = ['beats_sec', 'beats_min', 'beats_hr']
+        for unit in units:
+            df.loc[start_code_indexes, unit] = df[unit].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
+     
+        heartbeat_rate_df = self.resample_df(df, self.sample_len, (self.start_code, self.end_code))
 
         return heartbeat_rate_df
 
@@ -355,7 +335,7 @@ class Analysis:
         return sampled_df
 
     @staticmethod
-    def convert_units(df: pd.DataFrame, unit: str) -> pd.DataFrame: 
+    def convert_units(df: pd.DataFrame, unit: str, valid_units:dict) -> pd.DataFrame: 
         """
         Convert heartbeat rate (HR) values in the DataFrame from one time unit to another.
 
@@ -366,14 +346,60 @@ class Analysis:
         Returns:
             DataFrame: The DataFrame with converted HR values.
         """
-        valid_units = ['m', 'h']
-        if unit not in valid_units:
-            raise ValueError(f"Invalid time unit. Expected {valid_units}, but received '{unit}'.")
+        #valid_units = ['m', 'h']
+        if unit not in valid_units.keys():
+            raise ValueError(f"Invalid time unit. Expected {valid_units.keys}, but received '{unit}'.")
             
-        if unit == 'm':
-            df['beats_min'] = np.floor(df['beats_sec'] * 60)
+        if unit == 'm' or unit == 'MIN':
+            df['beats_min'] = np.floor(df['beats_sec'] * valid_units['m'])
         
         elif unit == 'h':
-            df['beats_hr'] = np.floor(df['beats_sec'] * 3600)
+            df['beats_hr'] = np.floor(df['beats_sec'] * valid_units['h'])
             
         return df
+
+
+    @staticmethod
+    def handle_data_gaps(df: pd.DataFrame, start_code: list, delta: float) -> pd.DataFrame:
+        """
+        Find gaps with over delta seconds and add zero beats/sec for all measurments after each gap point.
+
+        Parameters:
+            df (DataFrame): The DataFrame containing filtered data.
+            start_code (list): List of starting codes.
+            delta (float): Time delta in seconds.
+
+        Returns:
+            DataFrame: The DataFrame with added points.
+        """
+
+        gap_mask = (df['time_column'].diff().dt.total_seconds() > delta) & (~df['log_code'].isin(start_code))
+        gap_rows = []
+
+        for idx in df.index[gap_mask]:
+            prev_time = df['time_column'].iloc[idx - 1]
+            new_time = prev_time + pd.Timedelta(seconds=delta)
+
+            new_row = {
+                'time_column' : new_time,
+                'log_version' : df['log_version'][idx],
+                'log_code'    : 'added_point',
+                'log_data1'   : np.nan,
+                'log_data2'   : np.nan,
+                'log_data3'   : np.nan,
+                'device_type' : df['device_type'][idx],
+                'device_id'   : df['device_id'][idx],
+                'time_diff[sec]' : delta,  
+                'beats_sec'   : 0,
+                'beats_min'   : 0,
+                'beats_hr'    : 0,
+                'total_beats_device': np.nan,
+                'recording_id': df['recording_id'][idx],
+            }
+
+            gap_rows.append(new_row)
+
+        gap_rows_df = pd.DataFrame(gap_rows)
+        new_df = pd.concat([df, gap_rows_df], ignore_index=True)
+        new_df.sort_values(by='time_column', inplace=True)
+        return new_df
