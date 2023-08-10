@@ -62,10 +62,10 @@ class Analysis:
             self.total_beats_code = '1.7.0.2'
 
         # Threshold for beats per second per device
-        if 'cup' in config:
-            self.cup = config['cup']
+        if 'cap' in config:
+            self.cap = config['cap']
         else:
-            self.cup = [5, 6]
+            self.cap = [5, 6]
 
         # sampling rate in seconds
         if 'sample_len' in config:
@@ -138,13 +138,13 @@ class Analysis:
                     recording_id.append(count)
                     total_beats_device.append(np.nan)
 
-                    # Check cup for Hset devices
-                    if code == self.meas_code[0] and hr > self.cup[0]:
-                        hr_list.append(self.cup[0])
+                    # Check cap for Hset devices
+                    if code == self.meas_code[0] and hr > self.cap[0]:
+                        hr_list.append(self.cap[0])
 
-                    # Check cup for HPhire devices
-                    elif code == self.meas_code[1] and hr > self.cup[1]:
-                        hr_list.append(self.cup[0])
+                    # Check cap for HPhire devices
+                    elif code == self.meas_code[1] and hr > self.cap[1]:
+                        hr_list.append(self.cap[0])
 
                     else:
                         hr_list.append(round(hr, 3))
@@ -347,6 +347,7 @@ class Analysis:
         Parameters:
             df (DataFrame): The DataFrame containing heartbeat rate data.
             unit (str): The target time unit to which the HR values need to be converted.
+            valid_units (dict): Valid units in DataFrames
 
         Returns:
             DataFrame: The DataFrame with converted HR values.
@@ -386,20 +387,20 @@ class Analysis:
             new_time = prev_time + pd.Timedelta(seconds=delta)
 
             new_row = {
-                'time_column' : new_time,
-                'log_version' : df['log_version'][idx],
-                'log_code'    : 'added_point',
-                'log_data1'   : np.nan,
-                'log_data2'   : np.nan,
-                'log_data3'   : np.nan,
-                'device_type' : df['device_type'][idx],
-                'device_id'   : df['device_id'][idx],
-                'time_diff[sec]' : delta,  
-                'beats_sec'   : 0,
-                'beats_min'   : 0,
-                'beats_hr'    : 0,
+                'time_column'       : new_time,
+                'log_version'       : df['log_version'][idx],
+                'log_code'          : 'added_point',
+                'log_data1'         : np.nan,
+                'log_data2'         : np.nan,
+                'log_data3'         : np.nan,
+                'device_type'       : df['device_type'][idx],
+                'device_id'         : df['device_id'][idx],
+                'time_diff[sec]'    : delta,  
+                'beats_sec'         : 0,
+                'beats_min'         : 0,
+                'beats_hr'          : 0,
                 'total_beats_device': np.nan,
-                'recording_id': df['recording_id'][idx],
+                'recording_id'      : df['recording_id'][idx],
             }
 
             gap_rows.append(new_row)
@@ -409,7 +410,6 @@ class Analysis:
         new_df.sort_values(by='time_column', inplace=True)
 
         # Recalculate time_diff
-        
         time_diff = pd.to_datetime(new_df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
         new_df['time_diff[sec]'][0:-1] = time_diff[1:]
 

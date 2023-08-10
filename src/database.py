@@ -32,7 +32,7 @@ class Database:
             password = db_config['password']
         )
 
-        default_connection.set_isolation_level(0)  # Set isolation level to None
+        default_connection.set_isolation_level(0)  # Set isolation level to Autocommit
         default_cursor = default_connection.cursor()
 
         # Check if the database exists. If not exists, create a new database
@@ -48,8 +48,8 @@ class Database:
             else:
                 print(f"Database '{db_config['database']}' already exists.")
 
-        except psycopg2.Error as e:
-            print(f"Error creating or checking database: {e}")
+        except psycopg2.Error as error:
+            print(f"Error creating or checking database: {error}")
 
         finally:
             default_cursor.close()
