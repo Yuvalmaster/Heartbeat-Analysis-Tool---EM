@@ -94,10 +94,11 @@ meas_code:
   - '1.7.0.1'
   - '200'
 total_beats_code: '1.7.0.2'
-cup:
+cap:
   - 5
   - 6
 sample_len: 10
+time_delta: 20
 ```
 
 2. Ensure you have Python installed (Python 3.7 or higher).
