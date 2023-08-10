@@ -98,6 +98,7 @@ cup:
   - 5
   - 6
 sample_len: 10
+time_delta: 20
 ```
 
 2. Ensure you have Python installed (Python 3.7 or higher).
