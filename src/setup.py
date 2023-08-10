@@ -2,16 +2,12 @@ import subprocess
 
 class Setup():
     
-    # installing missing required packages
     @staticmethod
-    def check_and_install_packages(packages):
-        for package in packages:
-            
-            try:
-                __import__(package)
-                print(f"{package} is already installed")
-           
-            except ImportError:
-                print(f"{package} is not installed. Installing...")
-                subprocess.check_call(['python', '-m', 'pip', 'install', '-U', package])
-                print(f"{package} has been installed")
+    def check_and_install_packages(requirements_file):
+        try:
+            subprocess.run(['pip', 'install', '-r', requirements_file], check=True)
+            print('\nAll packages installed successfully!\n\n')
+        except subprocess.CalledProcessError:
+            print("An error occurred while installing libraries.")
+                
+
