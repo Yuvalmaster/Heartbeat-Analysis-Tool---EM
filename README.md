@@ -49,6 +49,8 @@ project_root/
     |   |-.json
     |
     |- README.md
+    |- requirements.txt
+    |- run.bat
 ```
 ### Dependencies
 The following Python packages are required for this project:
