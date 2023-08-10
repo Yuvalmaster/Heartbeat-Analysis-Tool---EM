@@ -18,14 +18,14 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 1,
+  "id": 6,
   "links": [],
   "liveNow": false,
   "panels": [
     {
       "datasource": {
         "type": "postgres",
-        "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
+        "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
       },
       "description": "The graph depicts the heartbeat rate over time, with 10 seconds between measurements. Since each recording can be taken at a different time, you can choose the date and the recording ID, and you will be given the option 'Zoom to data'. Please select your required Units from the top filter (beats/sec, beats/min, beats/hr). ",
       "fieldConfig": {
@@ -115,7 +115,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  time_column,\r\n  ($Unit)\r\n\r\nFROM ${Device}_${ID}_analysis_rate\r\nWHERE \r\n  recording_id IN ($Recording_id) AND\r\n  log_version IN ($Version) AND \r\n  DATE(time_column)::text IN ($Date);\r\n  \r\n ",
+          "rawSql": "SELECT\r\n  time_column,\r\n  $Unit\r\n\r\nFROM rate_analysis_data.$rate_table\r\nWHERE \r\n  recording_id::integer = ANY(ARRAY[$Recording_ID]::integer[])\r\n  AND log_version IN ($Version) \r\n  AND DATE(time_column)::text IN ($Date);",
           "refId": "A",
           "sql": {
             "columns": [
@@ -142,7 +142,7 @@
     {
       "datasource": {
         "type": "postgres",
-        "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
+        "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
       },
       "description": "The graph depicts the total number of beats recorded over the course of an hour. The X-axis displays the date and time of the recording. If a recording lasted an hour (from hh:00 to hh:59), it will be labeled as 'Fully recorded,' otherwise it will be labeled as 'Partially recorded'.",
       "fieldConfig": {
@@ -227,7 +227,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  date_column::text || '  HOUR:' || hour_column::text AS datetime_column,\r\n  SUM(total_beats) AS total_beats_sum,\r\n  CASE\r\n    WHEN is_hour_complete = 'False' THEN 'Partially recorded'\r\n    WHEN is_hour_complete = 'True' THEN 'Fully recorded'\r\n  END AS is_hour_complete_label\r\nFROM ${Device}_${ID}_analysis_total\r\nWHERE \r\n  log_version IN ($Version) AND\r\n  recording_id IN ($Recording_id) AND\r\n  date_column IN ($Date)\r\nGROUP BY date_column, hour_column, is_hour_complete;\r\n",
+          "rawSql": "SELECT\r\n  date_column::text || '  HOUR:' || hour_column::text AS datetime_column,\r\n  SUM(total_beats) AS total_beats_sum,\r\n  CASE\r\n    WHEN is_hour_complete = 'False' THEN 'Partially recorded'\r\n    WHEN is_hour_complete = 'True' THEN 'Fully recorded'\r\n  END AS is_hour_complete_label\r\nFROM total_analysis_data.$total_table\r\nWHERE \r\n  log_version IN ($Version) AND\r\n  recording_id IN ($Recording_ID) AND\r\n  date_column IN ($Date)\r\nGROUP BY date_column, hour_column, is_hour_complete;\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -276,7 +276,7 @@
       "type": "barchart"
     }
   ],
-  "refresh": false,
+  "refresh": "",
   "schemaVersion": 38,
   "style": "dark",
   "tags": [],
@@ -284,98 +284,50 @@
     "list": [
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "hphire",
           "value": "hphire"
         },
         "datasource": {
           "type": "postgres",
-          "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT DISTINCT\n    SUBSTRING(table_name, 1, POSITION('_' IN table_name) - 1) AS device_type\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%unique%';",
+        "definition": "SELECT DISTINCT device \nFROM devices",
         "hide": 0,
         "includeAll": false,
         "label": "Device",
         "multi": false,
         "name": "Device",
         "options": [],
-        "query": "SELECT DISTINCT\n    SUBSTRING(table_name, 1, POSITION('_' IN table_name) - 1) AS device_type\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%unique%';",
+        "query": "SELECT DISTINCT device \nFROM devices",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
         "type": "query"
       },
       {
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "1111",
           "value": "1111"
         },
         "datasource": {
           "type": "postgres",
-          "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT DISTINCT\n    SUBSTRING(table_name, POSITION('_' IN table_name) + 1) AS device_id\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'   -- Change 'public' to your schema name if it's different\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%\\_analysis\\_total%'\n    AND table_name NOT LIKE '%\\_analysis\\_rate%'\n    AND table_name NOT LIKE '%unique%';",
+        "definition": "SELECT id\nFROM devices\nWHERE device = '$Device'",
         "hide": 0,
         "includeAll": false,
         "label": "ID",
         "multi": false,
         "name": "ID",
         "options": [],
-        "query": "SELECT DISTINCT\n    SUBSTRING(table_name, POSITION('_' IN table_name) + 1) AS device_id\nFROM\n    information_schema.tables\nWHERE\n    table_schema = 'public'   -- Change 'public' to your schema name if it's different\n    AND table_name LIKE '%\\_%'\n    AND table_name NOT LIKE '%\\_analysis\\_total%'\n    AND table_name NOT LIKE '%\\_analysis\\_rate%'\n    AND table_name NOT LIKE '%unique%';",
+        "query": "SELECT id\nFROM devices\nWHERE device = '$Device'",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "postgres",
-          "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
-        },
-        "definition": "SELECT DISTINCT TO_CHAR(unique_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM unique_dates\nORDER BY date_only DESC;",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Date",
-        "multi": true,
-        "name": "Date",
-        "options": [],
-        "query": "SELECT DISTINCT TO_CHAR(unique_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM unique_dates\nORDER BY date_only DESC;",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": false,
-          "text": "All",
-          "value": "$__all"
-        },
-        "datasource": {
-          "type": "postgres",
-          "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
-        },
-        "definition": "SELECT DISTINCT unique_column\nFROM unique_versions",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Version",
-        "multi": true,
-        "name": "Version",
-        "options": [],
-        "query": "SELECT DISTINCT unique_column\nFROM unique_versions",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 0,
+        "sort": 3,
         "type": "query"
       },
       {
@@ -390,20 +342,76 @@
         },
         "datasource": {
           "type": "postgres",
-          "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT DISTINCT unique_column\nFROM unique_recordings_id\nORDER BY unique_column ASC;",
+        "definition": "SELECT DISTINCT log_version\nFROM raw_data.$raw_table",
         "hide": 0,
         "includeAll": true,
-        "label": "Recording_id",
+        "label": "Version",
         "multi": true,
-        "name": "Recording_id",
+        "name": "Version",
         "options": [],
-        "query": "SELECT DISTINCT unique_column\nFROM unique_recordings_id\nORDER BY unique_column ASC;",
+        "query": "SELECT DISTINCT log_version\nFROM raw_data.$raw_table",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
-        "sort": 0,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "2023-07-03"
+          ],
+          "value": [
+            "2023-07-03"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+        },
+        "definition": "SELECT DISTINCT TO_CHAR(time_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM raw_data.$raw_table\nWHERE log_version IN ($Version);",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Date",
+        "multi": true,
+        "name": "Date",
+        "options": [],
+        "query": "SELECT DISTINCT TO_CHAR(time_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM raw_data.$raw_table\nWHERE log_version IN ($Version);",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+        },
+        "definition": "SELECT DISTINCT recording_id\nFROM total_analysis_data.$total_table\nWhere DATE(date_column)::text IN ($Date);\n",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Recording_ID",
+        "multi": true,
+        "name": "Recording_ID",
+        "options": [],
+        "query": "SELECT DISTINCT recording_id\nFROM total_analysis_data.$total_table\nWhere DATE(date_column)::text IN ($Date);\n",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 3,
         "type": "query"
       },
       {
@@ -412,18 +420,99 @@
           "text": "beats_min",
           "value": "beats_min"
         },
-        "datasource": {
-          "type": "postgres",
-          "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
-        },
-        "definition": "SELECT DISTINCT unique_column\nFROM unique_units",
         "hide": 0,
         "includeAll": false,
         "label": "Unit",
         "multi": false,
         "name": "Unit",
+        "options": [
+          {
+            "selected": false,
+            "text": "beats_hr",
+            "value": "beats_hr"
+          },
+          {
+            "selected": true,
+            "text": "beats_min",
+            "value": "beats_min"
+          },
+          {
+            "selected": false,
+            "text": "beats_sec",
+            "value": "beats_sec"
+          }
+        ],
+        "query": "beats_hr, beats_min, beats_sec",
+        "queryValue": "",
+        "skipUrlSync": false,
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "hphire_1111",
+          "value": "hphire_1111"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+        },
+        "definition": "SELECT ''|| '$Device' || '_' || '$ID' ||''",
+        "hide": 2,
+        "includeAll": false,
+        "label": "raw_table",
+        "multi": false,
+        "name": "raw_table",
         "options": [],
-        "query": "SELECT DISTINCT unique_column\nFROM unique_units",
+        "query": "SELECT ''|| '$Device' || '_' || '$ID' ||''",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "hphire_1111_analysis_total",
+          "value": "hphire_1111_analysis_total"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+        },
+        "definition": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_total' ||''",
+        "hide": 2,
+        "includeAll": false,
+        "label": "total_table",
+        "multi": false,
+        "name": "total_table",
+        "options": [],
+        "query": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_total' ||''",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 0,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "hphire_1111_analysis_rate",
+          "value": "hphire_1111_analysis_rate"
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+        },
+        "definition": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_rate' ||''",
+        "hide": 2,
+        "includeAll": false,
+        "label": "rate_table",
+        "multi": false,
+        "name": "rate_table",
+        "options": [],
+        "query": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_rate' ||''",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -433,13 +522,26 @@
     ]
   },
   "time": {
-    "from": "2023-07-02T10:30:00.000Z",
-    "to": "2023-07-02T10:31:40.000Z"
+    "from": "2023-07-03T11:31:39.126Z",
+    "to": "2023-07-03T11:32:16.339Z"
   },
-  "timepicker": {},
+  "timepicker": {
+    "refresh_intervals": [
+      "5s",
+      "10s",
+      "30s",
+      "1m",
+      "5m",
+      "15m",
+      "30m",
+      "1h",
+      "2h",
+      "1d"
+    ]
+  },
   "timezone": "",
   "title": "EM-HR Monitoring",
-  "uid": "f4d5c4c8-2989-4000-90d6-b23df5814918",
-  "version": 3,
+  "uid": "cea7f7c1-fdfb-4fc3-8c47-def6b5f03936",
+  "version": 24,
   "weekStart": ""
 }

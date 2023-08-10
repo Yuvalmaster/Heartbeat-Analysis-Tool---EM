@@ -2,8 +2,6 @@ import os
 import numpy as np
 import pandas as pd
 import yaml
-from datetime import date, time, datetime
-
 
 class Analysis:
     def __init__(self, db_connection, table_name: str, config_directory: str):
@@ -90,7 +88,7 @@ class Analysis:
         """
         query = f"""
             SELECT *
-            FROM {self.table_name};
+            FROM raw_data.{self.table_name};
         """
         try:
             # Get data from database

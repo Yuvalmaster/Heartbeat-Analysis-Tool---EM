@@ -50,10 +50,6 @@ class DataLoader:
         if self.is_directory_empty():
             raise FileNotFoundError("No CSV files found in the specified directory.")
 
-        
-        unique_versions = []
-        unique_dates = []
-        
         # Iterate over each CSV file in the directory
         for file_path in tqdm(os.scandir(self.data_directory), desc='Loading CSV files', unit='file'):
             try:
@@ -61,17 +57,11 @@ class DataLoader:
                     raw_data = LogParser.load_log(file_path)
                     if raw_data:
                         self.db.save_raw_data(raw_data)
-                        unique_dates.append(raw_data['DATE'])
-                        unique_versions.extend(raw_data['DataFrame']['log_version'].tolist())    
+                        self.db.save_device(raw_data['DEVICE_TYPE'], raw_data['DEVICE_ID'])
 
             except FileNotFoundError:
                 raise FileNotFoundError(f"File '{self.data_directory}' not found.")
             
-        unique_versions = list(set(unique_versions))
-        unique_dates = list(set(unique_dates))
-        self.db.save_unique_vals(unique_versions, 'unique_versions')
-        self.db.save_unique_vals(unique_dates, 'unique_dates', timestamp=True)
-
 
     @staticmethod
     def load_config_file(config_directory: str) -> dict:
@@ -118,19 +108,14 @@ class DataLoader:
         if not devices_list:
             print('Error in loading devices from the database')
             return None
-
-        unique_recordings_id = []
            
         for device in devices_list:
             analysis_obj = Analysis(db.connection, device, config_directory)
+            
             total_heart_beat_df = analysis_obj.calc_total_heartbeat_over_time()
             heartbeat_rate_df = analysis_obj.calc_heartbeat_rate_over_time()
+            
             db.save_analysis_data(total_heart_beat_df, device, 'total')
             db.save_analysis_data(heartbeat_rate_df, device, 'rate')
             
-            unique_recordings_id.extend(heartbeat_rate_df['recording_id'].tolist())
-            unique_recordings_id.extend(total_heart_beat_df['recording_id'].tolist())
-             
-        db.save_unique_vals(list(set(unique_recordings_id)), 'unique_recordings_id')
-        db.save_unique_vals(['beats_sec', 'beats_min', 'beats_hr'], 'unique_units')
              
