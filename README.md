@@ -122,7 +122,7 @@ time_delta: 20
 8. Set a name for the dashboard, and connect to PostgreSQL.
 9. Explore the dashboard by using the filters located at the top. You have the flexibility to choose Device, ID, multiple Date, Version, Recording_id options, and units for the heartbeat rate graph. Additionally, you can zoom in and out on the Heartbeat Rate Over Time graph based on your preferences for recording_id or time.
     
-![Dashboard_img](https://github.com/Yuvalmaster/Heartbeat-Analysis-Tool---EM/assets/121662835/c9786a22-838e-429d-8bda-0fc263f30a1e)
+![image](https://github.com/Yuvalmaster/Heartbeat-Analysis-Tool---EM/assets/121662835/3ffe971a-f3fe-49ab-bb01-96504369360e)
 
 ## 4. PostgreSQL Database Setup:
 1. To set up the PostgreSQL database for the Heartbeat Analysis Tool, follow these steps:
