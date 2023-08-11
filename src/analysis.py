@@ -79,12 +79,14 @@ class Analysis:
 
         self.filtered_df = self.filter_data()
         
+    # %% DATABASE HANDLING      
+     
     def load_data(self) -> pd.DataFrame:
         """
         Get required raw_data from database.
 
         Returns:
-            DataFrame
+            DataFrame: The DataFrame containing the required raw data from the database.
         """
         query = f"""
             SELECT *
@@ -108,7 +110,8 @@ class Analysis:
             df = df.assign(device_id=name[1])
             return df
 
-
+    # %% ANALYSIS METHODS
+    
     def filter_data(self) -> pd.DataFrame:
         """
         Filter and process the raw data from the table.
@@ -298,6 +301,8 @@ class Analysis:
         return heartbeat_rate_df
 
 
+    # %% UTILITIES
+
     @staticmethod
     def resample_df(df: pd.DataFrame, sample_rate: int, codes: tuple) -> pd.DataFrame:
         """
@@ -429,8 +434,16 @@ class Analysis:
         return new_df
     
     @staticmethod
-    def recalculate_time_diff(df):
+    def recalculate_time_diff(df: pd.DataFrame) -> pd.Series:
+        """
+        Recalculate the time differences between consecutive timestamps in the DataFrame.
+
+        Parameters:
+            df (DataFrame): The DataFrame containing the time data.
+
+        Returns:
+            Series: The recalculated time differences.
+        """
         time_diff = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds().dropna(ignore_index=True)
         time_diff[len(time_diff)] = 0.0  # Adding zero to the end, since there is no time difference after that point.
-        return time_diff
-        
+        return time_diff   

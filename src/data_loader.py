@@ -90,7 +90,7 @@ class DataLoader:
 
 
     @staticmethod
-    def run_analysis_for_all_devices(db, config_directory: str):
+    def run_analysis_for_all_devices(db: Database, config_directory: str):
         """
         Request all tables from the database and initiate analysis for each device.
 

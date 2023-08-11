@@ -12,8 +12,8 @@ class Database:
         self.connection = self.connect_database(db_config=db_config)
         self.cursor = self.connection.cursor()
 
-
-    # %% DATABASE CONNECTION    
+    # %% DATABASE CONNECTION 
+       
     def connect_database(self, db_config: dict):
         """
         Connect to the database and create a new database if it doesn't exist.
@@ -77,6 +77,7 @@ class Database:
         
 
     # %% SAVE DATA TO DATABASE 
+    
     def save_raw_data(self, data: dict) -> None:
         """
         Save raw data to the database.
@@ -213,8 +214,18 @@ class Database:
             self.connection.commit()
             
 
-    # %% QUERY BUILDER
+    # %% QUERY BUILDERS
+    
     def build_create_schema(self, schema_name:str) -> str:
+        """
+        Build SQL query to create a new schema.
+
+        Parameters:
+            schema_name (str): The name of the schema to be created.
+
+        Returns:
+            str: SQL query to create the new schema.
+        """
         create_schema_query = f"CREATE SCHEMA IF NOT EXISTS {schema_name}"
         return create_schema_query
     
@@ -224,6 +235,7 @@ class Database:
         Build the SQL query to create a new table based on the DataFrame columns.
 
         Parameters:
+            schema_name (str): The name of the schema
             table_name (str): The name of the table to be created.
             df (DataFrame): DataFrame to infer the column names and types.
 
@@ -253,7 +265,8 @@ class Database:
         return insert_query
     
 
-    # %% ADDITIONAL TOOLS            
+    # %% ADDITIONAL TOOLS   
+             
     def check_file_in_table(self, schema_name:str, table_name: str, date: str) -> bool:
         """
         Check if a file exists in a specific table for a given date.
