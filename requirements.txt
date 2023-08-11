@@ -3,3 +3,4 @@ pandas==2.0.3
 psycopg2==2.9.6
 PyYAML==6.0.1
 tqdm==4.65.0
+SQLAlchemy==2.0.19

@@ -1,5 +1,4 @@
 # Heartbeat Analysis Tool
-NOTE: Please view Issues tab for bugs found after submission and how to handle them.
 ## Table of Contents
 - [Project Overview](#1-project-overview)
 - [Getting Started](#2-getting-started)
@@ -49,15 +48,18 @@ project_root/
     |   |-.json
     |
     |- README.md
+    |- requirements.txt
+    |- run.bat
 ```
 ### Dependencies
-The following Python packages are required for this project:
+The following Python packages and versions (or higher) are required for this project:
 ```md
-numpy
-pandas
-tqdm
-PyYAML
-psycopg2
+numpy==1.25.1
+pandas==2.0.3
+psycopg2==2.9.6
+PyYAML==6.0.1
+tqdm==4.65.0
+SQLAlchemy==2.0.19
 ```
 ## 2. Getting Started
 To use the Heartbeat Analysis Tool, follow these steps:

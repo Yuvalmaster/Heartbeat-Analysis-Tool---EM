@@ -12,10 +12,9 @@ Setup.check_and_install_packages(os.path.join(project_dir, 'requirements.txt'))
 from data_loader import DataLoader
 
 def main():
-   
     # load raw data to database
     dl = DataLoader(data_directory=data_dir, config_directory=config_dir)
-    
+       
     # load database object
     db = dl.db
     

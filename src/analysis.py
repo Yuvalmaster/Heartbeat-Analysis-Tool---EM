@@ -2,6 +2,7 @@ import os
 import numpy as np
 import pandas as pd
 import yaml
+from sqlalchemy import create_engine
 
 class Analysis:
     def __init__(self, db_connection, table_name: str, config_directory: str):
@@ -18,7 +19,7 @@ class Analysis:
         self.db_connection = db_connection
 
         if not table_name:
-            raise ValueError("Invalid table name. Please provide a non-empty table name.")
+            raise ValueError("Please provide a non-empty table name.")
         self.table_name = table_name
 
         # Load constants from the config file, providing default values if values are missing in the config file.
@@ -66,10 +67,10 @@ class Analysis:
             self.cap = [5, 6]
 
         # sampling rate in seconds
-        if 'sample_len' in config:
-            self.sample_len = config['sample_len']
+        if 'sample_rate' in config:
+            self.sample_rate = config['sample_rate']
         else:
-            self.sample_len = 10
+            self.sample_rate = 10
 
         if 'time_delta' in config:
             self.delta = float(config['time_delta'])
@@ -77,6 +78,35 @@ class Analysis:
             self.delta = 20.0
 
         self.filtered_df = self.filter_data()
+        
+    def load_data(self) -> pd.DataFrame:
+        """
+        Get required raw_data from database.
+
+        Returns:
+            DataFrame
+        """
+        query = f"""
+            SELECT *
+            FROM raw_data.{self.table_name};
+        """
+        try:    
+            # Get data from database
+            engine = create_engine('postgresql+psycopg2://', creator=lambda: self.db_connection)
+            df = pd.read_sql_query(query, engine)
+            
+            # Handle value types for uniformity
+            df['log_code'] = df['log_code'].astype(str)
+            df['log_version'] = df['log_version'].astype(str)
+
+        except Exception as error:
+            raise Exception(f"Error while fetching data from the database: {str(error)}")
+    
+        finally:
+            name = self.table_name.split('_')
+            df = df.assign(device_type=name[0].lower())
+            df = df.assign(device_id=name[1])
+            return df
 
 
     def filter_data(self) -> pd.DataFrame:
@@ -86,25 +116,7 @@ class Analysis:
         Returns:
             DataFrame: Filtered DataFrame with processed data.
         """
-        query = f"""
-            SELECT *
-            FROM raw_data.{self.table_name};
-        """
-        try:
-            # Get data from database
-            df = pd.read_sql_query(query, self.db_connection)
-            
-            # Handle value types for uniformity
-            df['log_code'] = df['log_code'].astype(str)
-            df['log_version'] = df['log_version'].astype(str)
-
-        except Exception as error:
-            raise Exception(f"Error while fetching data from the database: {str(error)}")
-        
-        name = self.table_name.split('_')
-        df = df.assign(device_type=name[0].upper())
-        df = df.assign(device_id=name[1])
-
+        df = self.load_data()
         df['time_diff[sec]'] = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
 
         # Initiate variables
@@ -272,7 +284,7 @@ class Analysis:
         Returns:
             DataFrame: DataFrame with heartbeat rate over time for each recording.
         """
-        df = self.filtered_df[['time_column', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id']]
+        df = self.filtered_df[['time_column', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id', 'time_diff[sec]']]
 
         start_code_indexes = df['log_code'].isin(self.start_code)
 
@@ -281,34 +293,37 @@ class Analysis:
         for unit in units:
             df.loc[start_code_indexes, unit] = df[unit].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
      
-        heartbeat_rate_df = self.resample_df(df, self.sample_len, (self.start_code, self.end_code))
+        heartbeat_rate_df = self.resample_df(df, self.sample_rate, (self.start_code, self.end_code))
 
         return heartbeat_rate_df
 
 
     @staticmethod
-    def resample_df(df: pd.DataFrame, sec: int, codes: tuple) -> pd.DataFrame:
+    def resample_df(df: pd.DataFrame, sample_rate: int, codes: tuple) -> pd.DataFrame:
         """
-        Resample the DataFrame by adding rows with measurements in every 'sec' seconds.
+        Resample the DataFrame by adding rows with measurements in every 'sample_rate' seconds.
 
         Parameters:
             df (DataFrame): The DataFrame to resample.
-            sec (int): The time interval in seconds for resampling.
+            sample_rate (int): The time sample_rate in seconds for resampling.
             codes (tuple): A tuple containing start and end codes.
 
         Returns:
             DataFrame: The resampled DataFrame.
         """
-        df['time_diff[sec]'] = df['time_column'].diff().dt.total_seconds()
-        df.reset_index(inplace=True, drop=True)
+        df = df.copy()
+        if 'time_diff[sec]' not in df.columns:
+            time_diff = Analysis.recalculate_time_diff(df)
+            df['time_diff[sec]'] = time_diff
+            
         gap_rows = []
         
-        lookout_idx = df.index[(df['time_diff[sec]'] > sec) & (~df['log_code'].isin(codes[0])) & (~df['log_code'].isin(codes[1]))]
+        lookout_idx = df.index[(df['time_diff[sec]'] > sample_rate) & (~df['log_code'].isin(codes[0])) & (~df['log_code'].isin(codes[1]))]
 
         for idx in lookout_idx:
             prev_time = df['time_column'].iloc[idx - 1]
-            num_rows = int(df['time_diff[sec]'].iloc[idx] // sec) - 1
-            time_interval = pd.Timedelta(seconds=sec)
+            num_rows = int(df['time_diff[sec]'].iloc[idx] // sample_rate) - 1
+            time_interval = pd.Timedelta(seconds=sample_rate)
 
             for i in range(num_rows):
                 new_time = prev_time + (i + 1) * time_interval
@@ -318,9 +333,9 @@ class Analysis:
                     'time_column' : new_time,
                     'log_version' : df['log_version'][idx],
                     'log_code'    : 'added_point', 
-                    'beats_sec'   : df['beats_sec'][idx-1],
-                    'beats_min'   : df['beats_min'][idx-1],
-                    'beats_hr'    : df['beats_hr'][idx-1],
+                    'beats_sec'   : df['beats_sec'][idx],
+                    'beats_min'   : df['beats_min'][idx],
+                    'beats_hr'    : df['beats_hr'][idx],
                     'recording_id': recording_id,
                     'device_type' : df['device_type'][idx],
                     'device_id'   : df['device_id'][idx],
@@ -405,10 +420,17 @@ class Analysis:
 
         gap_rows_df = pd.DataFrame(gap_rows)
         new_df = pd.concat([df, gap_rows_df], ignore_index=True)
-        new_df.sort_values(by='time_column', inplace=True)
+        new_df.sort_values(by='time_column', inplace=True, ignore_index=True)
 
         # Recalculate time_diff
-        time_diff = pd.to_datetime(new_df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
-        new_df['time_diff[sec]'][0:-1] = time_diff[1:]
+        time_diff = Analysis.recalculate_time_diff(new_df)
+        new_df['time_diff[sec]'] = time_diff
 
         return new_df
+    
+    @staticmethod
+    def recalculate_time_diff(df):
+        time_diff = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds().dropna(ignore_index=True)
+        time_diff[len(time_diff)] = 0.0  # Adding zero to the end, since there is no time difference after that point.
+        return time_diff
+        

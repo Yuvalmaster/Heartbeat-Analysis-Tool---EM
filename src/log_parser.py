@@ -28,11 +28,11 @@ class LogParser:
             title = '_'.join([DEVICE_TYPE, DEVICE_ID])
             
             if DEVICE_TYPE.lower() not in devices:
-                print(f'{file_name} file in data folder is for unrecognized device "{DEVICE_TYPE}"')
+                print(f'\n{file_name} file in data folder is for unrecognized device "{DEVICE_TYPE}"')
                 return None
         
         except:
-            print(f'{file_name} file in data folder is in incorrect format. Correct format: <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv')   
+            print(f'\n{file_name} file in data folder is in incorrect format. Correct format: <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv')   
             return None
                 
         # Read data frame

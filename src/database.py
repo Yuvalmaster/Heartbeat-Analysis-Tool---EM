@@ -154,11 +154,13 @@ class Database:
         Save analysed DataFrame to the database.
 
         Parameters:
-            df (DataFrame)
+            df (DataFrame): Analyzed data.
+            table_name (str): Name of the table.
+            analysis_type (str): Type of analysis.
 
         Returns:
             None
-        """
+        """   
         valid_types = ['rate', 'total']
         if analysis_type not in valid_types:
             print('Invalid analysis type')
@@ -238,7 +240,8 @@ class Database:
         Build the SQL query to insert data into the table based on the DataFrame columns.
 
         Parameters:
-            table_name (str): The name of the table to insert data into.
+            schema_name (str): Name of the schema.
+            table_name (str): Name of the table.
             df (DataFrame): DataFrame to infer the column names.
 
         Returns:
@@ -252,6 +255,17 @@ class Database:
 
     # %% ADDITIONAL TOOLS            
     def check_file_in_table(self, schema_name:str, table_name: str, date: str) -> bool:
+        """
+        Check if a file exists in a specific table for a given date.
+
+        Parameters:
+            schema_name (str): Name of the schema.
+            table_name (str): Name of the table.
+            date (str): Date to check.
+
+        Returns:
+            bool: True if the date exists, False otherwise.
+        """
         # Execute the SQL query to check if the specific date exists in the table
         query = f"""
             SELECT EXISTS (
@@ -314,6 +328,15 @@ class Database:
     
     
     def create_devices_table(self, table_name: str) -> str:
+        """
+        Create a devices table if it doesn't exist.
+
+        Parameters:
+            table_name (str): Name of the table.
+
+        Returns:
+            None
+        """
         create_table_query = f'''CREATE TABLE IF NOT EXISTS {table_name} (
                                     Device VARCHAR(255),
                                     ID VARCHAR(255)
