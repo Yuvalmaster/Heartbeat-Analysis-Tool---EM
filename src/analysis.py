@@ -326,7 +326,7 @@ class Analysis:
         lookout_idx = df.index[(df['time_diff[sec]'] > sample_rate) & (~df['log_code'].isin(codes[0])) & (~df['log_code'].isin(codes[1]))]
 
         for idx in lookout_idx:
-            prev_time = df['time_column'].iloc[idx - 1]
+            prev_time = df['time_column'].iloc[idx]
             num_rows = int(df['time_diff[sec]'].iloc[idx] // sample_rate) - 1
             time_interval = pd.Timedelta(seconds=sample_rate)
 
