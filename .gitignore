@@ -2,4 +2,8 @@
 /config/db_config.yaml
 /Data Research Analyst - Home Assignment.pdf
 /Dashboard Data/Dashboard_img.png
-src/__pycache__/
+
+# Ignore compiled Python files within src/__pycache__/
+/src/__pycache__/
+*.pyc
+*.pyo
