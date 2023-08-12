@@ -74,25 +74,6 @@ class Analysis(Database):
         if df.empty:
             filter_data = df
             return filter_data
-        
-        # ======================================================================== #
-        # NOTE: last_primary_id value assists in limiting the analysis section
-        # to new data only! meaning, no need to run analysis over all the raw data.
-        # This method however, will analyze only closed tests (meaning it had
-        # ending code) and will not analyze and show running test (one that was not
-        # closed with ending code). If required to show a vizualization of 
-        # real-time data, including a running test, it may be required to add an
-        # analysis method that add a label of 'ongoing' test, and analyze up to
-        # the last point, while the last_primary_id will point on the last closed
-        # test. In Addition, it will require to add a function that removes 
-        # ======================================================================== #  
-        # find_last_ending_df = df[df['log_code'].isin(self.end_code)]
-        # last_index = find_last_ending_df.index[-1] if not find_last_ending_df.empty else None
-        
-        # if last_index:
-        #     df = df.iloc[0:last_index + 1]
-        # else:
-        #     return pd.DataFrame()
       
         df['time_diff[sec]'] = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
 
