@@ -2,114 +2,64 @@ import os
 import numpy as np
 import pandas as pd
 import yaml
-from sqlalchemy import create_engine
 
-class Analysis:
-    def __init__(self, db_connection, table_name: str, config_directory: str):
+from database import Database
+
+class Analysis(Database):
+    def __init__(self, db_config: dict, device: tuple, config_directory: str, last_primary_id: int):
+        super().__init__(db_config)
         """
         Initialize the Analysis class.
 
         Parameters:
-            db_connection (connection): The database connection object.
-            table_name (str): The name of the table in the database.
+            db_config (dict): Configuration parameters for the database connection.
+            device (tuple): A tuple containing the device type and device ID.
             config_directory (str): The directory containing the analysis configuration YAML file.
+            last_primary_id (int): The last primary ID used for limiting the analysis to new data only.
         """
-        if db_connection is None:
-            raise ValueError("Invalid database connection. Please provide a valid database connection.")
-        self.db_connection = db_connection
-
-        if not table_name:
-            raise ValueError("Please provide a non-empty table name.")
-        self.table_name = table_name
+        self.DEFAULT_CONFIG = {
+            'hr_param_dict': {
+                's': 1,
+                'm': 60,
+                'h': 3600,
+                'SEC': 1,
+                'MIN': 60
+            },
+            'start_code': ['1.7.0.0', '170'],
+            'end_code': ['1.7.1.0', '171'],
+            'meas_code': ['1.7.0.1', '200'],
+            'total_beats_code': '1.7.0.2',
+            'cap': [5, 6],
+            'sample_rate': 10,
+            'time_delta': 20.0
+            }
+              
+        if not device:
+            raise ValueError("Analysis -> __init__: Please provide a tuple of (<device_type>, <device_id>).")
+        self.device = device
 
         # Load constants from the config file, providing default values if values are missing in the config file.
         try:
             with open(os.path.join(config_directory, 'analysis_config.yaml'), "r") as yaml_file:
                 config = yaml.safe_load(yaml_file)
         except FileNotFoundError:
-            raise FileNotFoundError("The analysis configuration YAML file could not be found. Please make sure the file exists in the specified directory.")
-
-        if 'hr_param_dict' in config:
-            self.hr_param_dict = config['hr_param_dict']
-        else:
-            self.hr_param_dict = {
-                's'  : 1,
-                'm'  : 60,
-                'h'  : 3600,
-                'SEC': 1,
-                'MIN': 60
-            }  
+            raise FileNotFoundError("Analysis -> __init__: The analysis configuration YAML file could not be found. Please make sure the file exists in the specified directory.") 
         
-        if 'start_code' in config:
-            self.start_code = config['start_code']
-        else:
-            self.start_code = ['1.7.0.0', '170']
+        # Fetch values from config. If missing get defaults.
+        self.hr_param_dict = config.get('hr_param_dict', self.DEFAULT_CONFIG['hr_param_dict'])
+        self.start_code = config.get('start_code', self.DEFAULT_CONFIG['start_code'])
+        self.end_code = config.get('end_code', self.DEFAULT_CONFIG['end_code'])
+        self.meas_code = config.get('meas_code', self.DEFAULT_CONFIG['meas_code'])
+        self.total_beats_code = config.get('total_beats_code', self.DEFAULT_CONFIG['total_beats_code'])
+        self.cap = config.get('cap', self.DEFAULT_CONFIG['cap'])
+        self.sample_rate = config.get('sample_rate', self.DEFAULT_CONFIG['sample_rate'])
+        self.delta = float(config.get('time_delta', self.DEFAULT_CONFIG['time_delta']))
 
-        if 'end_code' in config:
-            self.end_code = config['end_code']
-        else:
-            self.end_code = ['1.7.1.0', '171']
 
-        if 'meas_code' in config:
-            self.meas_code = config['meas_code']
-        else:
-            self.meas_code = ['1.7.0.1', '200']
-
-        if 'total_beats_code' in config:
-            self.total_beats_code = config['total_beats_code']
-        else:
-            self.total_beats_code = '1.7.0.2'
-
-        # Threshold for beats per second per device
-        if 'cap' in config:
-            self.cap = config['cap']
-        else:
-            self.cap = [5, 6]
-
-        # sampling rate in seconds
-        if 'sample_rate' in config:
-            self.sample_rate = config['sample_rate']
-        else:
-            self.sample_rate = 10
-
-        if 'time_delta' in config:
-            self.delta = float(config['time_delta'])
-        else:
-            self.delta = 20.0
-
+        self.last_primary_id = last_primary_id
         self.filtered_df = self.filter_data()
-        
-    # %% DATABASE HANDLING      
-     
-    def load_data(self) -> pd.DataFrame:
-        """
-        Get required raw_data from database.
-
-        Returns:
-            DataFrame: The DataFrame containing the required raw data from the database.
-        """
-        query = f"""
-            SELECT *
-            FROM raw_data.{self.table_name};
-        """
-        try:    
-            # Get data from database
-            engine = create_engine('postgresql+psycopg2://', creator=lambda: self.db_connection)
-            df = pd.read_sql_query(query, engine)
-            
-            # Handle value types for uniformity
-            df['log_code'] = df['log_code'].astype(str)
-            df['log_version'] = df['log_version'].astype(str)
-
-        except Exception as error:
-            raise Exception(f"Error while fetching data from the database: {str(error)}")
-    
-        finally:
-            name = self.table_name.split('_')
-            df = df.assign(device_type=name[0].lower())
-            df = df.assign(device_id=name[1])
-            return df
-
+ 
+           
     # %% ANALYSIS METHODS
     
     def filter_data(self) -> pd.DataFrame:
@@ -119,23 +69,47 @@ class Analysis:
         Returns:
             DataFrame: Filtered DataFrame with processed data.
         """
-        df = self.load_data()
+        
+        df = self.load_data_for_analysis(self.device, self.last_primary_id)
+        if df.empty:
+            filter_data = df
+            return filter_data
+        
+        # ======================================================================== #
+        # NOTE: last_primary_id value assists in limiting the analysis section
+        # to new data only! meaning, no need to run analysis over all the raw data.
+        # This method however, will analyze only closed tests (meaning it had
+        # ending code) and will not analyze and show running test (one that was not
+        # closed with ending code). If required to show a vizualization of 
+        # real-time data, including a running test, it may be required to add an
+        # analysis method that add a label of 'ongoing' test, and analyze up to
+        # the last point, while the last_primary_id will point on the last closed
+        # test. In Addition, it will require to add a function that removes 
+        # ======================================================================== #  
+        # find_last_ending_df = df[df['log_code'].isin(self.end_code)]
+        # last_index = find_last_ending_df.index[-1] if not find_last_ending_df.empty else None
+        
+        # if last_index:
+        #     df = df.iloc[0:last_index + 1]
+        # else:
+        #     return pd.DataFrame()
+      
         df['time_diff[sec]'] = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds()
 
         # Initiate variables
-        count = 0
+        test_count = self.check_last_test_id(self.device)
         hr_list = []
-        recording_id = []
+        test_id = []
         total_beats_device = []
         valid_flag = False
         
-        # Filter invalid rows and assign recording_id labels
+        # Filter invalid rows and assign test_id labels
         for idx, code in enumerate(df['log_code']):
             # If found a start code, create a new label
             if code in self.start_code:
                 valid_flag = True
-                count += 1
-                recording_id.append(count)
+                test_count += 1
+                test_id.append(test_count)
                 hr_list.append(np.nan)
                 total_beats_device.append(np.nan)
 
@@ -143,12 +117,12 @@ class Analysis:
             elif code in self.meas_code and valid_flag:
                 # remove entries at the same time
                 if df['time_diff[sec]'][idx] == 0 and df['log_code'][idx-1] not in self.start_code:
-                    recording_id.append('remove')
+                    test_id.append('remove')
                     hr_list.append(np.nan)
                     total_beats_device.append(np.nan)
                 else:
                     hr = df['log_data1'][idx] / self.hr_param_dict[df['log_data2'][idx]]  # Heart rate, normalized to beats/sec
-                    recording_id.append(count)
+                    test_id.append(test_count)
                     total_beats_device.append(np.nan)
 
                     # Check cap for Hset devices
@@ -172,18 +146,18 @@ class Analysis:
             elif code in self.total_beats_code and valid_flag:
                 total_beats_device.append(df['log_data1'][idx])
                 hr_list.append(np.nan)
-                recording_id.append(count)
+                test_id.append(test_count)
 
             # If code is end code, it turns off the valid_flag, meaning no measurement will register until the flag is on.
             elif code in self.end_code:
                 valid_flag = False
-                recording_id.append(count)
+                test_id.append(test_count)
                 hr_list.append(np.nan)
                 total_beats_device.append(np.nan)
 
             # Remove items that have no valid_flag
             elif not valid_flag:
-                recording_id.append('remove')
+                test_id.append('remove')
                 hr_list.append(np.nan)
                 total_beats_device.append(np.nan)
 
@@ -191,10 +165,17 @@ class Analysis:
         df = self.convert_units(df, 'm', valid_units=self.hr_param_dict)
         df = self.convert_units(df, 'h', valid_units=self.hr_param_dict)
         df['total_beats_device'] = total_beats_device
-        df['recording_id'] = recording_id
+        df['test_id'] = test_id
 
-        filtered_df = df[~df['recording_id'].isin(['remove'])]
+        filtered_df = df[~df['test_id'].isin(['remove'])]
         filtered_df.reset_index(inplace=True, drop=True)
+        
+        # Check ongoing test and apply flag
+        filtered_df = filtered_df.assign(ongoing=False)
+        ongoing_loc = self.check_ongoing_test(filtered_df)
+        if ongoing_loc != None:
+            filtered_df.loc[ongoing_loc:, 'ongoing'] = True
+            
 
         filtered_df = self.handle_data_gaps(df=filtered_df, start_code=self.start_code, delta=self.delta)
 
@@ -212,18 +193,18 @@ class Analysis:
         return filtered_df
 
 
-    def calc_total_heartbeat_over_time(self) -> pd.DataFrame:
+    def calc_total_heartbeat_over_time(self):
         """
-        Calculate the total heartbeat over time for each recording.
+        Calculate the total heartbeat over time for each recording and save the data to database.
 
         Returns:
-            DataFrame: DataFrame with total heartbeat over time for each recording.
+            None
         """
-        total_tests = self.filtered_df['recording_id'].unique()
+        total_tests = self.filtered_df['test_id'].unique()
         total_heart_beat_df = []
         
         for test in total_tests:
-            test_df = self.filtered_df[self.filtered_df['recording_id'] == test]
+            test_df = self.filtered_df[self.filtered_df['test_id'] == test]
             
             # Group the data by date and hour
             hourly_groups = test_df.groupby([test_df['time_column'].dt.date, test_df['time_column'].dt.hour])
@@ -253,17 +234,22 @@ class Analysis:
                 total_time = hour_group['time_column'].max() - hour_group['time_column'].min()
                 start_datetime = hour_group['time_column'].min()
                 end_datetime = hour_group['time_column'].max()
-
-                version = hour_group['log_version'].unique().item()
-                device = hour_group['device_type'].unique().item()
+                
+                version = hour_group['log_version'].unique().item() # Assuming each test is at specific version. Versions can be updated after the test ends.
+                device  = hour_group['device_type'].unique().item()
                 device_id = hour_group['device_id'].unique().item()
 
                 # flag that indicates if a complete hour was measured.
                 is_hour_complete = hour_group['time_column'].dt.minute.min() == 0 and hour_group['time_column'].dt.minute.max() == 59
 
+                if hour_group['ongoing'].any():
+                    ongoing = True
+                else:
+                    ongoing = False
+                
                 total_heart_beat_df.append({
-                    'date_column'     : date_val.strftime('%Y-%m-%d'),
-                    'recording_id'    : test,
+                    'time_column'     : date_val.strftime('%Y-%m-%d'),
+                    'test_id'         : test,
                     'hour_column'     : hour,
                     'total_beats'     : total_beats,
                     'total_time'      : total_time,
@@ -272,22 +258,22 @@ class Analysis:
                     'device_type'     : device,
                     'device_id'       : device_id,
                     'log_version'     : version,
-                    'is_hour_complete': is_hour_complete
+                    'is_hour_complete': is_hour_complete,
+                    'ongoing'         : ongoing
                 })
 
         total_heart_beat_df = pd.DataFrame(total_heart_beat_df)
-
-        return total_heart_beat_df
+        self.save_analysis_data(total_heart_beat_df, self.schema_name, self.table_names[2])
 
 
     def calc_heartbeat_rate_over_time(self) -> pd.DataFrame:
         """
-        Calculate the heartbeat rate over time for each recording.
+        Calculate the heartbeat rate over time for each recording and save the data to database.
 
         Returns:
-            DataFrame: DataFrame with heartbeat rate over time for each recording.
+            None
         """
-        df = self.filtered_df[['time_column', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'recording_id', 'device_type', 'device_id', 'time_diff[sec]']]
+        df = self.filtered_df[['time_column', 'log_version', 'log_code', 'beats_sec', 'beats_min','beats_hr', 'test_id', 'device_type', 'device_id', 'time_diff[sec]', 'ongoing']]
 
         start_code_indexes = df['log_code'].isin(self.start_code)
 
@@ -297,8 +283,7 @@ class Analysis:
             df.loc[start_code_indexes, unit] = df[unit].shift(-1).where(df['log_code'].shift(-1).isin(self.meas_code))
      
         heartbeat_rate_df = self.resample_df(df, self.sample_rate, (self.start_code, self.end_code))
-
-        return heartbeat_rate_df
+        self.save_analysis_data(heartbeat_rate_df,self.schema_name, self.table_names[3])
 
 
     # %% UTILITIES
@@ -332,7 +317,7 @@ class Analysis:
 
             for i in range(num_rows):
                 new_time = prev_time + (i + 1) * time_interval
-                recording_id = df['recording_id'].iloc[idx]
+                test_id = df['test_id'].iloc[idx]
 
                 new_row = {
                     'time_column' : new_time,
@@ -341,9 +326,10 @@ class Analysis:
                     'beats_sec'   : df['beats_sec'][idx],
                     'beats_min'   : df['beats_min'][idx],
                     'beats_hr'    : df['beats_hr'][idx],
-                    'recording_id': recording_id,
+                    'test_id'     : test_id,
                     'device_type' : df['device_type'][idx],
                     'device_id'   : df['device_id'][idx],
+                    'ongoing'     : df['ongoing'][idx]
                 }
 
                 gap_rows.append(new_row)
@@ -356,6 +342,7 @@ class Analysis:
         sampled_df.drop('time_diff[sec]', axis=1, inplace=True)
 
         return sampled_df
+
 
     @staticmethod
     def convert_units(df: pd.DataFrame, unit: str, valid_units:dict) -> pd.DataFrame: 
@@ -370,15 +357,14 @@ class Analysis:
         Returns:
             DataFrame: The DataFrame with converted HR values.
         """
-        #valid_units = ['m', 'h']
         if unit not in valid_units.keys():
-            raise ValueError(f"Invalid time unit. Expected {valid_units.keys}, but received '{unit}'.")
+            raise ValueError(f"Analysis -> convert_units: Invalid time unit. Expected {valid_units.keys}, but received '{unit}'.")
             
         if unit == 'm' or unit == 'MIN':
-            df['beats_min'] = np.floor(df['beats_sec'] * valid_units['m'])
+            df['beats_min'] = np.round(df['beats_sec'] * valid_units['m'])
         
         elif unit == 'h':
-            df['beats_hr'] = np.floor(df['beats_sec'] * valid_units['h'])
+            df['beats_hr'] = np.round(df['beats_sec'] * valid_units['h'])
             
         return df
 
@@ -408,17 +394,14 @@ class Analysis:
                 'time_column'       : new_time,
                 'log_version'       : df['log_version'][idx],
                 'log_code'          : 'added_point',
-                'log_data1'         : np.nan,
-                'log_data2'         : np.nan,
-                'log_data3'         : np.nan,
                 'device_type'       : df['device_type'][idx],
                 'device_id'         : df['device_id'][idx],
                 'time_diff[sec]'    : delta,  
                 'beats_sec'         : 0,
                 'beats_min'         : 0,
                 'beats_hr'          : 0,
-                'total_beats_device': np.nan,
-                'recording_id'      : df['recording_id'][idx],
+                'test_id'           : df['test_id'][idx],
+                'ongoing'           : df['ongoing'][idx]
             }
 
             gap_rows.append(new_row)
@@ -432,6 +415,7 @@ class Analysis:
         new_df['time_diff[sec]'] = time_diff
 
         return new_df
+
     
     @staticmethod
     def recalculate_time_diff(df: pd.DataFrame) -> pd.Series:
@@ -446,4 +430,29 @@ class Analysis:
         """
         time_diff = pd.to_datetime(df['time_column'], format='%H:%M:%S').diff().dt.total_seconds().dropna(ignore_index=True)
         time_diff[len(time_diff)] = 0.0  # Adding zero to the end, since there is no time difference after that point.
-        return time_diff   
+        return time_diff
+    
+    
+    def check_ongoing_test(self, df: pd.DataFrame) -> int:
+        """
+        Check whether there is an open test and find the index in the dataframe where it starts.
+
+        Parameters:
+            df (DataFrame): The DataFrame.
+
+        Returns:
+            last_index (int) or None. 
+
+        """
+        find_last_ending_df = df[df['log_code'].isin(self.end_code)]
+        last_index = find_last_ending_df.index[-1] if not find_last_ending_df.empty else None
+        
+        if last_index:
+            if last_index == df.shape[0]-1:
+                return None
+            else:
+                return last_index + 1
+        else:
+            # If no last_index, meaning all the df is an ongoing test
+            last_index = 0
+            return last_index

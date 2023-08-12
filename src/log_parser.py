@@ -28,11 +28,11 @@ class LogParser:
             title = '_'.join([DEVICE_TYPE, DEVICE_ID])
             
             if DEVICE_TYPE.lower() not in devices:
-                print(f'\n{file_name} file in data folder is for unrecognized device "{DEVICE_TYPE}"')
+                print(f'\nLogParser -> load_log: {file_name} file in data folder is for unrecognized device "{DEVICE_TYPE}"')
                 return None
         
         except:
-            print(f'\n{file_name} file in data folder is in incorrect format. Correct format: <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv')   
+            print(f'\nLogParser -> load_log: {file_name} file in data folder is in incorrect format. Correct format: <DEVICE_TYPE>_<DEVICE_ID>_<DATE>.csv')   
             return None
                 
         # Read data frame
@@ -44,8 +44,15 @@ class LogParser:
         # Add the date to the 'time_column' column
         df['time_column'] = pd.to_datetime(DATE + ' ' + df['time_column'].dt.strftime('%H:%M:%S'))
         
+        df = df.assign(device_type=DEVICE_TYPE.lower())
+        df = df.assign(device_id=DEVICE_ID)
+        
+        # Handle value types for uniformity
+        df['log_code'] = df['log_code'].astype(str)
+        df['log_version'] = df['log_version'].astype(str)
+        
         data = {
-            'DEVICE_TYPE' : DEVICE_TYPE,
+            'DEVICE_TYPE' : DEVICE_TYPE.lower(),
             'DEVICE_ID'   : DEVICE_ID,
             'DATE'        : DATE,
             'DataFrame'   : df,

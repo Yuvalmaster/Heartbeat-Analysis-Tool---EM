@@ -18,7 +18,7 @@
   "editable": true,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
-  "id": 6,
+  "id": 7,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -48,9 +48,6 @@
               "viz": false
             },
             "lineInterpolation": "linear",
-            "lineStyle": {
-              "fill": "solid"
-            },
             "lineWidth": 6,
             "pointSize": 5,
             "scaleDistribution": {
@@ -81,7 +78,32 @@
             ]
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Finished Tests"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Ongoing Test"
+              }
+            ]
+          }
+        ]
       },
       "gridPos": {
         "h": 8,
@@ -89,7 +111,7 @@
         "x": 0,
         "y": 0
       },
-      "id": 4,
+      "id": 5,
       "options": {
         "legend": {
           "calcs": [],
@@ -97,26 +119,51 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "timezone": [
-          "utc"
-        ],
         "tooltip": {
           "mode": "single",
           "sort": "none"
         }
       },
-      "pluginVersion": "10.0.3",
       "targets": [
         {
           "datasource": {
             "type": "postgres",
-            "uid": "f69ba6d8-f742-4c73-8250-588e1838c4bf"
+            "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  time_column,\r\n  $Unit\r\n\r\nFROM rate_analysis_data.$rate_table\r\nWHERE \r\n  recording_id::integer = ANY(ARRAY[$Recording_ID]::integer[])\r\n  AND log_version IN ($Version) \r\n  AND DATE(time_column)::text IN ($Date);",
+          "rawSql": "SELECT\r\n  time_column,\r\n  $unit\r\nFROM $schema_name.$rate_analysis_table\r\nWHERE \r\n  device_id = '$device_id'\r\n  AND device_type = '$device_type'\r\n  AND test_id IN ($test_id) \r\n  AND log_version IN ($log_version) \r\n  AND DATE(time_column)::text IN ($date)\r\n  AND ongoing = 'False';",
           "refId": "A",
+          "sql": {
+            "columns": [
+              {
+                "parameters": [],
+                "type": "function"
+              }
+            ],
+            "groupBy": [
+              {
+                "property": {
+                  "type": "string"
+                },
+                "type": "groupBy"
+              }
+            ],
+            "limit": 50
+          }
+        },
+        {
+          "datasource": {
+            "type": "postgres",
+            "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "hide": false,
+          "rawQuery": true,
+          "rawSql": "SELECT\r\n  time_column,\r\n  $unit\r\nFROM $schema_name.$rate_analysis_table\r\nWHERE \r\n  device_id = '$device_id'\r\n  AND device_type = '$device_type'\r\n  AND test_id IN ($test_id) \r\n  AND log_version IN ($log_version) \r\n  AND DATE(time_column)::text IN ($date)\r\n  AND ongoing = 'True';",
+          "refId": "B",
           "sql": {
             "columns": [
               {
@@ -227,7 +274,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT\r\n  date_column::text || '  HOUR:' || hour_column::text AS datetime_column,\r\n  SUM(total_beats) AS total_beats_sum,\r\n  CASE\r\n    WHEN is_hour_complete = 'False' THEN 'Partially recorded'\r\n    WHEN is_hour_complete = 'True' THEN 'Fully recorded'\r\n  END AS is_hour_complete_label\r\nFROM total_analysis_data.$total_table\r\nWHERE \r\n  log_version IN ($Version) AND\r\n  recording_id IN ($Recording_ID) AND\r\n  date_column IN ($Date)\r\nGROUP BY date_column, hour_column, is_hour_complete;\r\n",
+          "rawSql": "SELECT\r\n  time_column::text || '  HOUR:' || hour_column::text AS datetime_column,\r\n  SUM(total_beats) AS total_beats_sum,\r\n  CASE\r\n    WHEN is_hour_complete = 'False' THEN 'Partially recorded'\r\n    WHEN is_hour_complete = 'True' THEN 'Fully recorded'\r\n  END AS is_hour_complete_label\r\nFROM $schema_name.$total_analysis_table\r\nWHERE \r\n  device_type = '$device_type'\r\n  AND device_id = '$device_id'\r\n  AND log_version IN ($log_version) \r\n  AND test_id IN ($test_id) \r\n  AND time_column IN ($date)\r\nGROUP BY time_column, hour_column, is_hour_complete;\r\n",
           "refId": "A",
           "sql": {
             "columns": [
@@ -292,14 +339,14 @@
           "type": "postgres",
           "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT DISTINCT device \nFROM devices",
+        "definition": "SELECT DISTINCT device_type\nFROM $schema_name.devices",
         "hide": 0,
         "includeAll": false,
         "label": "Device",
         "multi": false,
-        "name": "Device",
+        "name": "device_type",
         "options": [],
-        "query": "SELECT DISTINCT device \nFROM devices",
+        "query": "SELECT DISTINCT device_type\nFROM $schema_name.devices",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -316,14 +363,14 @@
           "type": "postgres",
           "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT id\nFROM devices\nWHERE device = '$Device'",
+        "definition": "SELECT device_id\nFROM $schema_name.devices\nWHERE device_type = '$device_type'",
         "hide": 0,
         "includeAll": false,
         "label": "ID",
         "multi": false,
-        "name": "ID",
+        "name": "device_id",
         "options": [],
-        "query": "SELECT id\nFROM devices\nWHERE device = '$Device'",
+        "query": "SELECT device_id\nFROM $schema_name.devices\nWHERE device_type = '$device_type'",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -344,42 +391,14 @@
           "type": "postgres",
           "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT DISTINCT log_version\nFROM raw_data.$raw_table",
+        "definition": "SELECT DISTINCT log_version\nFROM $schema_name.$raw_table\nWHERE device_type = '$device_type' AND device_id = '$device_id'",
         "hide": 0,
         "includeAll": true,
         "label": "Version",
         "multi": true,
-        "name": "Version",
+        "name": "log_version",
         "options": [],
-        "query": "SELECT DISTINCT log_version\nFROM raw_data.$raw_table",
-        "refresh": 1,
-        "regex": "",
-        "skipUrlSync": false,
-        "sort": 1,
-        "type": "query"
-      },
-      {
-        "current": {
-          "selected": true,
-          "text": [
-            "2023-07-03"
-          ],
-          "value": [
-            "2023-07-03"
-          ]
-        },
-        "datasource": {
-          "type": "postgres",
-          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
-        },
-        "definition": "SELECT DISTINCT TO_CHAR(time_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM raw_data.$raw_table\nWHERE log_version IN ($Version);",
-        "hide": 0,
-        "includeAll": true,
-        "label": "Date",
-        "multi": true,
-        "name": "Date",
-        "options": [],
-        "query": "SELECT DISTINCT TO_CHAR(time_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM raw_data.$raw_table\nWHERE log_version IN ($Version);",
+        "query": "SELECT DISTINCT log_version\nFROM $schema_name.$raw_table\nWHERE device_type = '$device_type' AND device_id = '$device_id'",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -400,14 +419,42 @@
           "type": "postgres",
           "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
         },
-        "definition": "SELECT DISTINCT recording_id\nFROM total_analysis_data.$total_table\nWhere DATE(date_column)::text IN ($Date);\n",
+        "definition": "SELECT DISTINCT TO_CHAR(time_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM $schema_name.$raw_table\nWHERE log_version IN ($log_version) AND device_type = '$device_type' AND device_id = '$device_id'",
         "hide": 0,
         "includeAll": true,
-        "label": "Recording_ID",
+        "label": "Date",
         "multi": true,
-        "name": "Recording_ID",
+        "name": "date",
         "options": [],
-        "query": "SELECT DISTINCT recording_id\nFROM total_analysis_data.$total_table\nWhere DATE(date_column)::text IN ($Date);\n",
+        "query": "SELECT DISTINCT TO_CHAR(time_column, 'YYYY-MM-DD')::character varying AS date_only\nFROM $schema_name.$raw_table\nWHERE log_version IN ($log_version) AND device_type = '$device_type' AND device_id = '$device_id'",
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "sort": 1,
+        "type": "query"
+      },
+      {
+        "current": {
+          "selected": true,
+          "text": [
+            "All"
+          ],
+          "value": [
+            "$__all"
+          ]
+        },
+        "datasource": {
+          "type": "postgres",
+          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
+        },
+        "definition": "SELECT DISTINCT test_id\nFROM $schema_name.$total_analysis_table\nWHERE \nDATE(time_column)::text IN ($date) AND \ndevice_type = '$device_type' AND \ndevice_id = '$device_id' AND \nlog_version IN ($log_version);",
+        "hide": 0,
+        "includeAll": true,
+        "label": "Test No.",
+        "multi": true,
+        "name": "test_id",
+        "options": [],
+        "query": "SELECT DISTINCT test_id\nFROM $schema_name.$total_analysis_table\nWHERE \nDATE(time_column)::text IN ($date) AND \ndevice_type = '$device_type' AND \ndevice_id = '$device_id' AND \nlog_version IN ($log_version);",
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
@@ -424,7 +471,7 @@
         "includeAll": false,
         "label": "Unit",
         "multi": false,
-        "name": "Unit",
+        "name": "unit",
         "options": [
           {
             "selected": false,
@@ -450,80 +497,96 @@
       {
         "current": {
           "selected": false,
-          "text": "hphire_1111",
-          "value": "hphire_1111"
+          "text": "raw_data",
+          "value": "raw_data"
         },
-        "datasource": {
-          "type": "postgres",
-          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
-        },
-        "definition": "SELECT ''|| '$Device' || '_' || '$ID' ||''",
         "hide": 2,
         "includeAll": false,
         "label": "raw_table",
         "multi": false,
         "name": "raw_table",
-        "options": [],
-        "query": "SELECT ''|| '$Device' || '_' || '$ID' ||''",
-        "refresh": 1,
-        "regex": "",
+        "options": [
+          {
+            "selected": true,
+            "text": "raw_data",
+            "value": "raw_data"
+          }
+        ],
+        "query": "raw_data",
         "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "type": "custom"
       },
       {
         "current": {
           "selected": false,
-          "text": "hphire_1111_analysis_total",
-          "value": "hphire_1111_analysis_total"
+          "text": "analysis_total_beats_over_time",
+          "value": "analysis_total_beats_over_time"
         },
-        "datasource": {
-          "type": "postgres",
-          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
-        },
-        "definition": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_total' ||''",
         "hide": 2,
         "includeAll": false,
-        "label": "total_table",
+        "label": "total_analysis_table",
         "multi": false,
-        "name": "total_table",
-        "options": [],
-        "query": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_total' ||''",
-        "refresh": 1,
-        "regex": "",
+        "name": "total_analysis_table",
+        "options": [
+          {
+            "selected": true,
+            "text": "analysis_total_beats_over_time",
+            "value": "analysis_total_beats_over_time"
+          }
+        ],
+        "query": "analysis_total_beats_over_time",
         "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "type": "custom"
       },
       {
         "current": {
           "selected": false,
-          "text": "hphire_1111_analysis_rate",
-          "value": "hphire_1111_analysis_rate"
+          "text": "devices_and_analysis",
+          "value": "devices_and_analysis"
         },
-        "datasource": {
-          "type": "postgres",
-          "uid": "dc60e2e8-57b8-46f9-9495-61792bcbf03d"
-        },
-        "definition": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_rate' ||''",
         "hide": 2,
         "includeAll": false,
-        "label": "rate_table",
+        "label": "schema_name",
         "multi": false,
-        "name": "rate_table",
-        "options": [],
-        "query": "SELECT ''|| '$Device' || '_' || '$ID' || '_analysis_rate' ||''",
-        "refresh": 1,
-        "regex": "",
+        "name": "schema_name",
+        "options": [
+          {
+            "selected": true,
+            "text": "devices_and_analysis",
+            "value": "devices_and_analysis"
+          }
+        ],
+        "query": "devices_and_analysis",
         "skipUrlSync": false,
-        "sort": 0,
-        "type": "query"
+        "type": "custom"
+      },
+      {
+        "current": {
+          "selected": false,
+          "text": "analysis_rate_over_time",
+          "value": "analysis_rate_over_time"
+        },
+        "hide": 2,
+        "includeAll": false,
+        "label": "rate_analysis_table",
+        "multi": false,
+        "name": "rate_analysis_table",
+        "options": [
+          {
+            "selected": true,
+            "text": "analysis_rate_over_time",
+            "value": "analysis_rate_over_time"
+          }
+        ],
+        "query": "analysis_rate_over_time",
+        "skipUrlSync": false,
+        "type": "custom"
       }
     ]
   },
   "time": {
-    "from": "2023-07-03T11:31:39.126Z",
-    "to": "2023-07-03T11:32:16.339Z"
+    "from": "2023-07-03T11:31:39.943Z",
+    "to": "2023-07-03T11:32:26.128Z"
   },
   "timepicker": {
     "refresh_intervals": [
@@ -541,7 +604,7 @@
   },
   "timezone": "",
   "title": "EM-HR Monitoring",
-  "uid": "cea7f7c1-fdfb-4fc3-8c47-def6b5f03936",
-  "version": 24,
+  "uid": "e0e50514-72d5-4f01-b26f-4eabd41e2860",
+  "version": 31,
   "weekStart": ""
 }

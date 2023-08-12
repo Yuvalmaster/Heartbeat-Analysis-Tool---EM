@@ -76,6 +76,8 @@ port: <port>
 database: HRDataEM
 user: <username>
 password: <password>
+schema: <schema_name>
+table_names: <table_names_list>
 ```
 
 analysis_config.yaml format (with default values):
@@ -160,3 +162,5 @@ psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE <database_name> TO <userna
 11. The graph of the total heartbeat over time will calculate how many beats were measured during each hour of the day. If there is a partial recording, it will still show how many were recorded in that hour and indicate that it is partial. If a recording lasted an hour (from hh:00 to hh:59), it will be labeled as 'Fully recorded,' otherwise, it will be labeled as 'Partially recorded'.
 
 12. The Heartbeat Rate Over Time graph is based on universal time (UTC).
+
+13. The Heartbeat Rate Over Time graph will separate between ongoing test and finished tests.

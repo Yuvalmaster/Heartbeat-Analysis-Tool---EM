@@ -20,8 +20,10 @@ class DataLoader:
         self.config_directory = config_directory
 
         # Load database
-        self.db_config = self.load_config_file(self.config_directory)
+        self.db_config = self.load_db_config_file(self.config_directory)
         self.db = Database(self.db_config)
+        
+        self.last_primary_id = self.check_last_primary_id()
 
         # Load raw data
         self.load_all_csv()
@@ -48,7 +50,7 @@ class DataLoader:
         """
         # Test if the directory is empty
         if self.is_directory_empty():
-            raise FileNotFoundError("No CSV files found in the specified directory.")
+            raise FileNotFoundError("DataLoader -> load_all_csv: No CSV files found in the specified directory.")
 
         # Iterate over each CSV file in the directory
         for file_path in tqdm(os.scandir(self.data_directory), desc='Loading CSV files', unit='file'):
@@ -60,11 +62,11 @@ class DataLoader:
                         self.db.save_device(raw_data['DEVICE_TYPE'], raw_data['DEVICE_ID'])
 
             except FileNotFoundError:
-                raise FileNotFoundError(f"File '{self.data_directory}' not found.")
+                raise FileNotFoundError(f"DataLoader -> load_all_csv: File '{self.data_directory}' not found.")
             
 
     @staticmethod
-    def load_config_file(config_directory: str) -> dict:
+    def load_db_config_file(config_directory: str) -> dict:
         """
         Load the database configuration file values.
 
@@ -79,43 +81,80 @@ class DataLoader:
             config_data = yaml.safe_load(yaml_file)
 
             config = {
-                'host'    : config_data.get("host"),
-                'port'    : config_data.get("port"),
-                'database': config_data.get("database"),
-                'user'    : config_data.get("user"),
-                'password': config_data.get("password")
+                'host'       : config_data.get("host"),
+                'port'       : config_data.get("port"),
+                'database'   : config_data.get("database"),
+                'user'       : config_data.get("user"),
+                'password'   : config_data.get("password"),
+                'schema'     : config_data.get("schema"),
+                'table_names': config_data.get("table_names")
             }
 
             return config
 
 
-    @staticmethod
-    def run_analysis_for_all_devices(db: Database, config_directory: str):
+    def run_analysis_for_all_devices(self):
         """
         Request all tables from the database and initiate analysis for each device.
-
-        Parameters:
-            db (Database): The Database object used for interacting with the database.
-            config_directory (str): The directory path containing the analysis configuration YAML file.
 
         Returns:
             None
         """
         # Get all devices in the database
-        devices_list = db.find_all_devices()
+        devices_list = self.db.find_all_devices()
 
         # Handle missing devices list
         if not devices_list:
-            print('Error in loading devices from the database')
+            print('DataLoader -> run_analysis_for_all_devices: Error in loading devices from the database')
             return None
            
-        for device in devices_list:
-            analysis_obj = Analysis(db.connection, device, config_directory)
+        for device in devices_list:           
+            analysis_obj = Analysis(db_config=self.db_config,
+                                    device=device, 
+                                    config_directory=self.config_directory,
+                                    last_primary_id=self.last_primary_id)
             
-            total_heart_beat_df = analysis_obj.calc_total_heartbeat_over_time()
-            heartbeat_rate_df = analysis_obj.calc_heartbeat_rate_over_time()
             
-            db.save_analysis_data(total_heart_beat_df, device, 'total')
-            db.save_analysis_data(heartbeat_rate_df, device, 'rate')
+            if analysis_obj.filtered_df.empty:
+                continue
             
-             
+            analysis_obj.calc_total_heartbeat_over_time()
+            analysis_obj.calc_heartbeat_rate_over_time()                      
+            analysis_obj.close_db()
+            
+            
+    def check_last_primary_id(self):
+        """
+        Check the last primary ID for the specified end codes in the log data.
+
+        Returns:
+            int or None: Last primary ID if the table exists, None otherwise.
+        """
+        with open(os.path.join(self.config_directory, 'analysis_config.yaml'), "r") as yaml_file:
+            config = yaml.safe_load(yaml_file)
+            
+        if 'end_code' in config:
+            end_code = config['end_code']
+        else:
+            end_code = ['1.7.1.0', '171']
+            
+        table_exists = self.db.table_exists(self.db.schema_name, self.db.table_names[2])
+
+        if table_exists:
+            # Execute the query to get the last ID
+            end_codes = "', '".join(end_code)
+            
+            query_last_id = f"""
+                SELECT id_primary
+                FROM {self.db.schema_name}.{self.db.table_names[1]}
+                WHERE log_code IN ('{end_codes}')
+                ORDER BY id_primary DESC
+                LIMIT 1;
+            """
+            self.db.cursor.execute(query_last_id)
+            last_id = self.db.cursor.fetchone()[0]  # Fetch the first column of the first row
+            return last_id
+        
+        else:
+            print(f"DataLoader -> check_last_primary_id: {self.db.table_names[1]} table does not exist.")
+            return None            

@@ -3,3 +3,9 @@ port: 5432
 database: HRDataEM
 user: postgres
 password: "%%PASSWORD%%"
+schema: devices_and_analysis
+table_names:
+  - 'devices'
+  - 'raw_data'
+  - 'analysis_total_beats_over_time'
+  - 'analysis_rate_over_time'
